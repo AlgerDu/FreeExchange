@@ -1,0 +1,15 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace D.FreeExchange.Core.Interface
+{
+    /// <summary>
+    /// client 接口
+    /// </summary>
+    public interface IClient
+    {
+    }
+}
