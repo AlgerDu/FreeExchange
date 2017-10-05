@@ -40,7 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interface\Handlers.cs" />
     <Compile Include="Interface\IClient.cs" />
+    <Compile Include="Interface\IClientProxy.cs" />
     <Compile Include="Interface\IContext.cs" />
     <Compile Include="Interface\IFreeExchange.cs" />
     <Compile Include="Interface\IServer.cs" />

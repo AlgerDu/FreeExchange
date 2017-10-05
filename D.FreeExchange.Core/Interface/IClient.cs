@@ -35,6 +35,12 @@ namespace D.FreeExchange.Core.Interface
         /// 主动同步一些数据，如 tag
         /// </summary>
         void SyncData();
+
+        event ConnectedHandler OnConnected;
+
+        event ReconnectedHandler OnReconnected;
+
+        event ClosecHandler OnClosed;
     }
 
     /// <summary>
@@ -49,23 +55,4 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         T CustomerData { get; set; }
     }
-
-    /// <summary>
-    /// 连接成功
-    /// </summary>
-    /// <param name="sender"></param>
-    public delegate void ConnectedHandler(IClient sender);
-
-    /// <summary>
-    /// 重连成功
-    /// </summary>
-    /// <param name="sender"></param>
-    public delegate void ReconnectedHandler(IClient sender);
-
-    /// <summary>
-    /// 已经关闭
-    /// 请不要在处理此事件的过程中调用任何 IClent 上任何有关清理的函数
-    /// </summary>
-    /// <param name="sender"></param>
-    public delegate void ClosecHandler(IClient sender);
 }

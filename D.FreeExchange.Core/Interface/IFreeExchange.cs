@@ -41,11 +41,4 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         event OnExchangeHandler OnExchange;
     }
-
-    /// <summary>
-    /// 处理数据交换的委托
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="context"></param>
-    public delegate void OnExchangeHandler(IFreeExchange sender, IContext context);
 }
