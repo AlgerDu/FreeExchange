@@ -17,15 +17,35 @@ namespace D.FreeExchange.Core.Interface
         Guid Uid { get; }
 
         /// <summary>
-        /// 和连接的另外一端交换数据
+        /// 和连接的另外一端交换数据，发送请求
         /// </summary>
-        /// <typeparam name="T">返回的数据</typeparam>
+        /// <typeparam name="R">返回的数据类型</typeparam>
+        /// <typeparam name="D">传入的数据类型</typeparam>
         /// <param name="url">路由</param>
         /// <param name="data">发送的数据</param>
         /// <param name="hasBytes">发送的数据中是否有 byte 类型的字段</param>
         /// <returns></returns>
-        Task<T> Exchange<T>(string url, object data, bool hasBytes = false) where T : class;
+        Task<R> Exchange<R, D>(string url, D data, bool hasBytes = false);
+
+        /// <summary>
+        /// 回复连接的另外一端的请求数据
+        /// </summary>
+        /// <typeparam name="D">回复请求的数据类型</typeparam>
+        /// <param name="uid">请求的唯一标识</param>
+        /// <param name="data">回复的数据</param>
+        /// <returns>是否成功</returns>
+        Task<bool> Exchange<D>(Guid uid, D data);
+
+        /// <summary>
+        /// 当收到另一端的连接请求的时候，供外部使用处理请求
+        /// </summary>
+        event OnExchangeHandler OnExchange;
     }
 
-    public delegate void OnExchange();
+    /// <summary>
+    /// 处理数据交换的委托
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="context"></param>
+    public delegate void OnExchangeHandler(IFreeExchange sender, IContext context);
 }
