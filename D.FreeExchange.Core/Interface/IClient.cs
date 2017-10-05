@@ -19,6 +19,22 @@ namespace D.FreeExchange.Core.Interface
         /// 2、发送主动的同步命令
         /// </summary>
         string Tag { get; set; }
+
+        /// <summary>
+        /// 连接 server
+        /// </summary>
+        /// <param name="address">server 地址</param>
+        void Connect(string address);
+
+        /// <summary>
+        /// 关闭
+        /// </summary>
+        void Close();
+
+        /// <summary>
+        /// 主动同步一些数据，如 tag
+        /// </summary>
+        void SyncData();
     }
 
     /// <summary>
