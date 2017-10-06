@@ -12,6 +12,11 @@ namespace D.FreeExchange.Core.Interface
     public interface IFitter
     {
         /// <summary>
+        /// 类型标签
+        /// </summary>
+        string Tag { get; }
+
+        /// <summary>
         /// 装配（数据组包）
         /// </summary>
         /// <param name="product"></param>
@@ -28,5 +33,7 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         /// <param name="command"></param>
         void ExecuteCommand(FitterCommand command);
+
+        event FitterReportHandler OnReport;
     }
 }

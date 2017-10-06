@@ -31,4 +31,11 @@ namespace D.FreeExchange.Core.Interface
     /// </summary>
     /// <param name="sender"></param>
     public delegate void ClosecHandler(object sender);
+
+    /// <summary>
+    /// fitter 上报处理，现在能想到的就是 close
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name=""></param>
+    public delegate void FitterReportHandler(IFitter sender, FitterReportEvent e);
 }

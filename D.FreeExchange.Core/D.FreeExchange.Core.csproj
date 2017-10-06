@@ -46,6 +46,7 @@
     <Compile Include="Interface\IClientProxy.cs" />
     <Compile Include="Interface\IContext.cs" />
     <Compile Include="Interface\IFitter.cs" />
+    <Compile Include="Interface\IFitterFactory.cs" />
     <Compile Include="Interface\IFreeExchange.cs" />
     <Compile Include="Interface\IProductionLine.cs" />
     <Compile Include="Interface\IServer.cs" />

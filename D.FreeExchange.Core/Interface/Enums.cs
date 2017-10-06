@@ -11,7 +11,12 @@ namespace D.FreeExchange.Core.Interface
     /// </summary>
     public enum FitterCommand
     {
-        Work,
-        Rest
+        Run,
+        Close
+    }
+
+    public enum FitterReportEvent
+    {
+        Close
     }
 }
