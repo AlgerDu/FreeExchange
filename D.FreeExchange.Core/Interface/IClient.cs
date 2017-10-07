@@ -36,11 +36,11 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         void SyncData();
 
-        event ConnectedHandler OnConnected;
+        event ClientConnectedHandler OnConnected;
 
-        event ReconnectedHandler OnReconnected;
+        event ClientReconnectedHandler OnReconnected;
 
-        event ClosecHandler OnClosed;
+        event ClientClosecHandler OnClosed;
     }
 
     /// <summary>

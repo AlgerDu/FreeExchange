@@ -17,20 +17,20 @@ namespace D.FreeExchange.Core.Interface
     /// 连接成功
     /// </summary>
     /// <param name="sender"></param>
-    public delegate void ConnectedHandler(object sender);
+    public delegate void ClientConnectedHandler(object sender);
 
     /// <summary>
     /// 重连成功
     /// </summary>
     /// <param name="sender"></param>
-    public delegate void ReconnectedHandler(object sender);
+    public delegate void ClientReconnectedHandler(object sender);
 
     /// <summary>
     /// 已经关闭
     /// 请不要在处理此事件的过程中调用任何 IClent 上任何有关清理的函数
     /// </summary>
     /// <param name="sender"></param>
-    public delegate void ClosecHandler(object sender);
+    public delegate void ClientClosecHandler(object sender);
 
     /// <summary>
     /// fitter 上报处理，现在能想到的就是 close
