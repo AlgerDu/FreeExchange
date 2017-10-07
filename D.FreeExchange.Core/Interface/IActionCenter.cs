@@ -17,7 +17,6 @@ namespace D.FreeExchange.Core.Interface
         /// 执行请求，类 mvc
         /// </summary>
         /// <param name="context"></param>
-        /// <returns></returns>
-        bool Execute(IContext context);
+        void Execute(IContext context);
     }
 }

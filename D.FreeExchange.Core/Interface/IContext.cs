@@ -14,8 +14,16 @@ namespace D.FreeExchange.Core.Interface
         /// <summary>
         /// 唯一标志
         /// </summary>
-        Guid Uid { get; }
+        Guid Uid { get; set; }
 
-        string Url { get; }
+        /// <summary>
+        /// action 的路由
+        /// </summary>
+        string Url { get; set; }
+
+        /// <summary>
+        /// 执行结果
+        /// </summary>
+        ContextState State { get; set; }
     }
 }
