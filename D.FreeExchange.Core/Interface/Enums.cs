@@ -21,7 +21,7 @@ namespace D.FreeExchange.Core.Interface
     }
 
     /// <summary>
-    /// context 的状态
+    /// context 的状态，由上到下转变，1xx 代表客户端的状态，2xx 服务端存在的状态
     /// </summary>
     public enum ContextState
     {

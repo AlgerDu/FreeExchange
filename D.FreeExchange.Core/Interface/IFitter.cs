@@ -12,6 +12,11 @@ namespace D.FreeExchange.Core.Interface
     public interface IFitter
     {
         /// <summary>
+        /// 是否正在运行
+        /// </summary>
+        bool IsWorking { get; }
+
+        /// <summary>
         /// 类型标签
         /// </summary>
         string Tag { get; }
@@ -34,6 +39,9 @@ namespace D.FreeExchange.Core.Interface
         /// <param name="command"></param>
         void ExecuteCommand(FitterCommand command);
 
+        /// <summary>
+        /// 上报一些事件，目前只有 close 事件
+        /// </summary>
         event FitterReportHandler OnReport;
     }
 }

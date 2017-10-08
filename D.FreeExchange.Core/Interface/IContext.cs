@@ -8,6 +8,7 @@ namespace D.FreeExchange.Core.Interface
 {
     /// <summary>
     /// 上下文
+    /// TODO：不该暴露的 set 属性，如何在不同的情况下不暴露出去
     /// </summary>
     public interface IContext
     {
@@ -17,13 +18,27 @@ namespace D.FreeExchange.Core.Interface
         Guid Uid { get; set; }
 
         /// <summary>
+        /// 所署的客户端
+        /// </summary>
+        Guid ClientUid { get; set; }
+
+        /// <summary>
+        /// context 状态
+        /// </summary>
+        ContextState State { get; set; }
+
+        /// <summary>
         /// action 的路由
         /// </summary>
         string Url { get; set; }
 
         /// <summary>
-        /// 执行结果
+        /// 重发次数
         /// </summary>
-        ContextState State { get; set; }
+        int ResendTimes { get; set; }
+
+        object RequestData { get; set; }
+
+        object ResponseData { get; set; }
     }
 }
