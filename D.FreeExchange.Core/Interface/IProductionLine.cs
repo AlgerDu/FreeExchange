@@ -9,6 +9,7 @@ namespace D.FreeExchange.Core.Interface
 {
     /// <summary>
     /// 装配流水线
+    /// 管理 filters ，连接，启动，停止，处理事件上报
     /// </summary>
     public interface IProductionLine
     {
@@ -22,5 +23,7 @@ namespace D.FreeExchange.Core.Interface
         void Run();
 
         void Close();
+
+        event FitterReportHandler OnReport;
     }
 }

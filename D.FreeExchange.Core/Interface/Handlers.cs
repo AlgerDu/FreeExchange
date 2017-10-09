@@ -37,5 +37,5 @@ namespace D.FreeExchange.Core.Interface
     /// </summary>
     /// <param name="sender"></param>
     /// <param name=""></param>
-    public delegate void FitterReportHandler(IFitter sender, FitterReportEvent e);
+    public delegate void FitterReportHandler(IFitter sender, FitterReportEvent e, params object[] datas);
 }

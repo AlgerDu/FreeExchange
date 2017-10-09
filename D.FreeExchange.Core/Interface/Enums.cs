@@ -17,7 +17,15 @@ namespace D.FreeExchange.Core.Interface
 
     public enum FitterReportEvent
     {
-        Close
+        /// <summary>
+        /// 关闭
+        /// </summary>
+        Close,
+
+        /// <summary>
+        /// 数据
+        /// </summary>
+        Data
     }
 
     /// <summary>

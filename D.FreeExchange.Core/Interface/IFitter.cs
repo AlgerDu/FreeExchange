@@ -22,6 +22,13 @@ namespace D.FreeExchange.Core.Interface
         string Tag { get; }
 
         /// <summary>
+        /// 将两个 fitter 联系起来
+        /// </summary>
+        /// <param name="i">用于装配的下一个 fitter</param>
+        /// <param name="d">用于拆卸的下一个 fitter</param>
+        void Connect(IFitter i, IFitter d);
+
+        /// <summary>
         /// 装配（数据组包）
         /// </summary>
         /// <param name="product"></param>
