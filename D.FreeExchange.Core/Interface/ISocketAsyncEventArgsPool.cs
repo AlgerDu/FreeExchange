@@ -14,7 +14,8 @@ namespace D.FreeExchange.Core.Interface
     public interface ISocketAsyncEventArgsPool
     {
         /// <summary>
-        /// 获取一个可用的 SocketAsyncEventArgs
+        /// 获取一个可用的 SocketAsyncEventArgs，
+        /// 要为 arg 设置好 buffer
         /// </summary>
         /// <returns></returns>
         SocketAsyncEventArgs Pop();
