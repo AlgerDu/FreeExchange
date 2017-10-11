@@ -55,6 +55,7 @@
     <Compile Include="Interface\IFreeExchange.cs" />
     <Compile Include="Interface\IProductionLine.cs" />
     <Compile Include="Interface\IServer.cs" />
+    <Compile Include="Interface\ISocketAsyncEventArgsPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

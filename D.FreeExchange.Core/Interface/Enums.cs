@@ -12,7 +12,7 @@ namespace D.FreeExchange.Core.Interface
     public enum FitterCommand
     {
         Run,
-        Close
+        Stop
     }
 
     public enum FitterReportEvent

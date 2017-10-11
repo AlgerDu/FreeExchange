@@ -3,6 +3,7 @@ using D.Util.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,8 +18,14 @@ namespace D.FreeExchange.Core.Fitters
         public static string Tag = "Socket";
 
         ILogger _logger;
+        ISocketAsyncEventArgsPool _pool;
 
         bool _isWorking;
+        IFitter _nextDismantlingFitter;
+        IFitter _nextInstallationFitter;
+
+        SocketAsyncEventArgs _receiveEventArg;
+        SocketAsyncEventArgs _sendEventArg;
 
         #region IFitter 属性
         public bool IsWorking
@@ -39,9 +46,13 @@ namespace D.FreeExchange.Core.Fitters
         #endregion
 
         public SocketFitter(
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory
+            , ISocketAsyncEventArgsPool pool)
         {
             _logger = loggerFactory.CreateLogger<SocketFitter>();
+            _pool = pool;
+
+            _isWorking = false;
         }
 
         #region IFitter 行为
