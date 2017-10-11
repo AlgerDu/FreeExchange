@@ -13,7 +13,7 @@ namespace D.FreeExchange.Core.Fitters
     /// socket fitter
     /// 最基层的 fitter，用于对 socket 的一些封装
     /// </summary>
-    public class SocketFitter : IFitter
+    public class SocketFitter : IFitter, IBasket
     {
         public static string Tag = "Socket";
 
@@ -23,6 +23,8 @@ namespace D.FreeExchange.Core.Fitters
         bool _isWorking;
         IFitter _nextDismantlingFitter;
         IFitter _nextInstallationFitter;
+
+        Socket _socket;
 
         SocketAsyncEventArgs _receiveEventArg;
         SocketAsyncEventArgs _sendEventArg;
@@ -76,6 +78,13 @@ namespace D.FreeExchange.Core.Fitters
         public void Installation(object product)
         {
             throw new NotImplementedException();
+        }
+        #endregion
+
+        #region IBasket
+        public void AddMaterial(Socket socket)
+        {
+            _socket = socket;
         }
         #endregion
     }
