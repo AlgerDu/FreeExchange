@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace D.FreeExchange.Core.Fitters
@@ -72,7 +73,14 @@ namespace D.FreeExchange.Core.Fitters
 
         public void ExecuteCommand(FitterCommand command)
         {
-            throw new NotImplementedException();
+            switch (command)
+            {
+                case FitterCommand.Run: ExecuteRunCommand(); break;
+                case FitterCommand.Stop: ExecuteStopCommand(); break;
+                default:
+                    _logger.LogWarning($"没有处理的 fitter 命令：{command}");
+                    break;
+            }
         }
 
         public void Installation(object product)
@@ -86,6 +94,93 @@ namespace D.FreeExchange.Core.Fitters
         {
             _socket = socket;
         }
+        #endregion
+
+        #region 执行命令
+        /// <summary>
+        /// 执行 run 命令
+        /// </summary>
+        private void ExecuteRunCommand()
+        {
+            if (_isWorking)
+            {
+                _logger.LogWarning($"fitter 正处于工作中，不在相应 {FitterCommand.Run} 命令");
+            }
+
+            if (_socket == null)
+            {
+                _logger.LogWarning($"没有可以使用 socket 材料，fitter 无法开始工作");
+                return;
+            }
+
+            lock (this) _isWorking = true;
+
+            //从 pool 中申请用于 receive 和 send 的 SocketAsyncEventArgs
+            _receiveEventArg = _pool.Pop();
+            _sendEventArg = _pool.Pop();
+
+            _receiveEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+            _sendEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+
+            if (!_socket.ReceiveAsync(_receiveEventArg)) ProcessReceive(_receiveEventArg);
+        }
+
+        /// <summary>
+        /// 执行 run 命令
+        /// </summary>
+        private void ExecuteStopCommand()
+        {
+
+        }
+        #endregion
+
+        #region SocketAsyncEventArgs 事件处理
+
+        private void OnCompleted(object sender, SocketAsyncEventArgs e)
+        {
+            switch (e.LastOperation)
+            {
+                case SocketAsyncOperation.Receive: ProcessReceive(e); break;
+                default:
+                    _logger.LogWarning($"没有进行处理的 SocketAsyncEventArgs 事件：{e.LastOperation}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// socket 数据接受完成之后，处理数据
+        /// </summary>
+        /// <param name="e"></param>
+        private void ProcessReceive(SocketAsyncEventArgs e)
+        {
+            // 当 socket 中传输的 byte 字节为 0 时，默认 socket 已经关闭连接
+            if (e.BytesTransferred > 0)
+            {
+                if (e.SocketError == SocketError.Success)
+                {
+                    var buffer = new byte[e.BytesTransferred];
+                    Array.Copy(e.Buffer, e.Offset, buffer, 0, buffer.Length);
+
+                    _logger.LogTrace($"socket 接受到 {e.BytesTransferred} 个 byte 数据");
+
+                    _nextInstallationFitter?.Installation(buffer);
+
+                    if (_isWorking)
+                    {
+                        if (!_socket.ReceiveAsync(e)) ProcessReceive(e);
+                    }
+                }
+                else
+                {
+                    //this.ProcessError(e);
+                }
+            }
+            else
+            {
+                //this.CloseClientSocket(e);
+            }
+        }
+
         #endregion
     }
 }
