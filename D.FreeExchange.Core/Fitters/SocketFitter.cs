@@ -109,20 +109,23 @@ namespace D.FreeExchange.Core.Fitters
 
             if (_socket == null)
             {
-                _logger.LogWarning($"没有可以使用 socket 材料，fitter 无法开始工作");
+                _logger.LogWarning($"没有可以使用的 socket 材料，fitter 无法开始工作");
                 return;
             }
 
-            lock (this) _isWorking = true;
+            lock (this)
+            {
+                _isWorking = true;
 
-            //从 pool 中申请用于 receive 和 send 的 SocketAsyncEventArgs
-            _receiveEventArg = _pool.Pop();
-            _sendEventArg = _pool.Pop();
+                //从 pool 中申请用于 receive 和 send 的 SocketAsyncEventArgs
+                _receiveEventArg = _pool.Pop();
+                _sendEventArg = _pool.Pop();
 
-            _receiveEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
-            _sendEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+                _receiveEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+                _sendEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnCompleted);
 
-            if (!_socket.ReceiveAsync(_receiveEventArg)) ProcessReceive(_receiveEventArg);
+                if (!_socket.ReceiveAsync(_receiveEventArg)) ProcessReceive(_receiveEventArg);
+            }
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace D.FreeExchange.Core.Fitters
         /// </summary>
         private void ExecuteStopCommand()
         {
-
+            StopWorking();
         }
         #endregion
 
@@ -163,6 +166,7 @@ namespace D.FreeExchange.Core.Fitters
 
                     _logger.LogTrace($"socket 接受到 {e.BytesTransferred} 个 byte 数据");
 
+                    //获取到的 buffer 直接作为下一个 fitter 的零件进行组装
                     _nextInstallationFitter?.Installation(buffer);
 
                     if (_isWorking)
@@ -172,15 +176,58 @@ namespace D.FreeExchange.Core.Fitters
                 }
                 else
                 {
-                    //this.ProcessError(e);
+                    ProcessError(e);
                 }
             }
             else
             {
-                //this.CloseClientSocket(e);
+                StopWorking();
             }
         }
 
+        /// <summary>
+        /// 处理 SocketAsyncEventArgs 的错误
+        /// </summary>
+        /// <param name="e"></param>
+        private void ProcessError(SocketAsyncEventArgs e)
+        {
+            _logger.LogError($"在 socket 发送或者接收的过程中出现了错误：{e.SocketError}");
+
+            StopWorking();
+        }
+
         #endregion
+
+        /// <summary>
+        /// fitter 停止工作
+        /// </summary>
+        private void StopWorking()
+        {
+            if (!_isWorking)
+            {
+                _logger.LogWarning("尚未工作，不处理停止工作的命令");
+                return;
+            }
+
+            lock (this)
+            {
+                _isWorking = false;
+
+                if (_socket != null)
+                {
+                    try
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"关闭 socket 的过程中出现错误：{ex.ToString()}");
+                    }
+                }
+
+                _pool.Push(_sendEventArg);
+                _pool.Push(_receiveEventArg);
+            }
+        }
     }
 }
