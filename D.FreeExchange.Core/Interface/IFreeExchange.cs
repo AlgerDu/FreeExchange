@@ -39,6 +39,6 @@ namespace D.FreeExchange.Core.Interface
         /// <summary>
         /// 当收到另一端的连接请求的时候，供外部使用处理请求
         /// </summary>
-        event OnExchangeHandler OnExchange;
+        event EventHandler<IContext> Exchanging;
     }
 }

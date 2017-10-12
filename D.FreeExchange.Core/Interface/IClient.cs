@@ -36,11 +36,20 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         void SyncData();
 
-        event ClientConnectedHandler OnConnected;
+        /// <summary>
+        /// 成功连接服务器
+        /// </summary>
+        event EventHandler Connected;
 
-        event ClientReconnectedHandler OnReconnected;
+        /// <summary>
+        /// 与服务器重连成功
+        /// </summary>
+        event EventHandler Reconnected;
 
-        event ClientClosecHandler OnClosed;
+        /// <summary>
+        /// 已经关闭
+        /// </summary>
+        event EventHandler Closed;
     }
 
     /// <summary>

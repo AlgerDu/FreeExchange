@@ -1,4 +1,5 @@
-﻿using System;
+﻿using D.FreeExchange.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,10 +22,16 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         void Close();
 
-        event ClientConnectedHandler OnConnected;
+        /// <summary>
+        /// 代替 rProxy 与其 client 通讯，主要用于 client 重连，重用 server 端的缓存数据
+        /// 一般情况下只需要 IServer 进行调用
+        /// </summary>
+        /// <param name="proxy"></param>
+        void Replease(IClientProxy rProxy);
 
-        event ClientReconnectedHandler OnReconnected;
-
-        event ClientClosecHandler OnClosed;
+        /// <summary>
+        /// client 同步数据到 server，重连时，IServer 先调用 IClientProxy.Replease，在调用此函数
+        /// </summary>
+        event EventHandler<ClientDataEventArgs> SyncingData;
     }
 }
