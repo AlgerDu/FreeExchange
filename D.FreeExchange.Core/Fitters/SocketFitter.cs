@@ -168,7 +168,10 @@ namespace D.FreeExchange.Core.Fitters
                     _logger.LogTrace($"socket 接受到 {e.BytesTransferred} 个 byte 数据");
 
                     //获取到的 buffer 直接作为下一个 fitter 的零件进行组装
-                    _nextInstallationFitter?.Installation(buffer);
+                    if (_nextInstallationFitter != null)
+                        _nextInstallationFitter?.Installation(buffer);
+                    else
+                        ReportData(buffer);
 
                     if (_isWorking)
                     {
@@ -183,6 +186,7 @@ namespace D.FreeExchange.Core.Fitters
             else
             {
                 StopWorking();
+                ReportClose();
             }
         }
 
@@ -195,6 +199,7 @@ namespace D.FreeExchange.Core.Fitters
             _logger.LogError($"在 socket 发送或者接收的过程中出现了错误：{e.SocketError}");
 
             StopWorking();
+            ReportClose();
         }
 
         #endregion
@@ -229,6 +234,31 @@ namespace D.FreeExchange.Core.Fitters
                 _pool.Push(_sendEventArg);
                 _pool.Push(_receiveEventArg);
             }
+        }
+
+        /// <summary>
+        /// 上报 close 事件
+        /// </summary>
+        private void ReportClose()
+        {
+            var arg = new FitterReportEventArgs
+            {
+                Type = FitterReportEvent.Close,
+                Datas = null
+            };
+
+            Report?.Invoke(this, arg);
+        }
+
+        private void ReportData(byte[] buffer)
+        {
+            var arg = new FitterReportEventArgs
+            {
+                Type = FitterReportEvent.Data,
+                Datas = new object[] { buffer }
+            };
+
+            Report?.Invoke(this, arg);
         }
     }
 }
