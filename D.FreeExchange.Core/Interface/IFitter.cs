@@ -1,4 +1,5 @@
-﻿using System;
+﻿using D.FreeExchange.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -49,6 +50,6 @@ namespace D.FreeExchange.Core.Interface
         /// <summary>
         /// 上报一些事件，目前只有 close 事件
         /// </summary>
-        event FitterReportHandler OnReport;
+        event EventHandler<FitterReportEventArgs> Report;
     }
 }

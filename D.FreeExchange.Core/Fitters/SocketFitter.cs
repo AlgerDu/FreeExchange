@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using D.FreeExchange.Core.Models;
 
 namespace D.FreeExchange.Core.Fitters
 {
@@ -59,7 +60,7 @@ namespace D.FreeExchange.Core.Fitters
         }
 
         #region IFitter 行为
-        public event FitterReportHandler OnReport;
+        public event EventHandler<FitterReportEventArgs> Report;
 
         public void Connect(IFitter i, IFitter d)
         {
