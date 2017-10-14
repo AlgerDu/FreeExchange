@@ -64,12 +64,46 @@ namespace D.FreeExchange.Core.Fitters
 
         public void Connect(IFitter i, IFitter d)
         {
-            throw new NotImplementedException();
+            _nextInstallationFitter = i;
+            _nextDismantlingFitter = d;
         }
 
         public void Dismantling(object product)
         {
-            throw new NotImplementedException();
+            if (!_isWorking)
+            {
+                _logger.LogWarning($"{Tag} 尚未开始工作，不发送数据");
+                return;
+            }
+
+            if (product.GetType() != typeof(byte[]))
+            {
+                _logger.LogWarning($"{Tag} 只能发送 byte[]，不能发送 {product.GetType().Name} 数据");
+                return;
+            }
+
+            if (_socket == null)
+            {
+                _logger.LogWarning($"发送数据用 socket 不存在");
+                return;
+            }
+
+            if (_socket.Connected)
+            {
+                try
+                {
+                    _socket.Send(product as byte[]);
+                }
+                catch (SocketException ex)
+                {
+                    _logger.LogError($"{Tag} send 数据失败：{ex.ToString()}");
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"{Tag} 使用的 socket 已经关闭，无法发送数据");
+                return;
+            }
         }
 
         public void ExecuteCommand(FitterCommand command)
@@ -86,7 +120,7 @@ namespace D.FreeExchange.Core.Fitters
 
         public void Installation(object product)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{Tag} 的 installation 不应该被调用");
         }
         #endregion
 
@@ -105,7 +139,8 @@ namespace D.FreeExchange.Core.Fitters
         {
             if (_isWorking)
             {
-                _logger.LogWarning($"fitter 正处于工作中，不在相应 {FitterCommand.Run} 命令");
+                _logger.LogWarning($"fitter 正处于工作中，不再响应 {FitterCommand.Run} 命令");
+                return;
             }
 
             if (_socket == null)
@@ -130,7 +165,7 @@ namespace D.FreeExchange.Core.Fitters
         }
 
         /// <summary>
-        /// 执行 run 命令
+        /// 执行 stop 命令
         /// </summary>
         private void ExecuteStopCommand()
         {
