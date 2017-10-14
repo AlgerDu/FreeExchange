@@ -59,6 +59,7 @@
     <Compile Include="Interface\ISocketAsyncEventArgsPool.cs" />
     <Compile Include="Models\ClientDataEventArgs.cs" />
     <Compile Include="Models\FitterReportEventArgs.cs" />
+    <Compile Include="SocketAsyncEventArgsPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

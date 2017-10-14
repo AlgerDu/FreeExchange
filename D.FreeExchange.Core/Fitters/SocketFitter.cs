@@ -266,6 +266,9 @@ namespace D.FreeExchange.Core.Fitters
                     }
                 }
 
+                _sendEventArg.Completed -= new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+                _receiveEventArg.Completed -= new EventHandler<SocketAsyncEventArgs>(OnCompleted);
+
                 _pool.Push(_sendEventArg);
                 _pool.Push(_receiveEventArg);
             }
