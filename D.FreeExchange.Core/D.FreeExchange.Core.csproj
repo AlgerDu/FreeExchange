@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="Fitters\SocketFitter.cs" />
     <Compile Include="Interface\Enums.cs" />
-    <Compile Include="Interface\Handlers.cs" />
     <Compile Include="Interface\IBasket.cs" />
     <Compile Include="Interface\IClient.cs" />
     <Compile Include="Interface\IClientProxy.cs" />
