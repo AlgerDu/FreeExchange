@@ -24,7 +24,6 @@ namespace D.FreeExchange.Core.Interface
         /// 将一个不再使用的 SocketAsyncEventArgs 重新放回 pool 中
         /// </summary>
         /// <param name="arg"></param>
-        /// <returns></returns>
-        bool Push(SocketAsyncEventArgs arg);
+        void Push(SocketAsyncEventArgs arg);
     }
 }

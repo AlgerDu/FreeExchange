@@ -92,13 +92,11 @@ namespace D.FreeExchange.Core
             return arg;
         }
 
-        public bool Push(SocketAsyncEventArgs arg)
+        public void Push(SocketAsyncEventArgs arg)
         {
             CleanArg(arg);
 
             _argQueue.Enqueue(arg);
-
-            return true;
         }
         #endregion
 
