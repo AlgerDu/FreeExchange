@@ -37,8 +37,14 @@ namespace D.FreeExchange.Core.Interface
         /// </summary>
         int ResendTimes { get; set; }
 
+        /// <summary>
+        /// 请求数据
+        /// </summary>
         object RequestData { get; set; }
 
+        /// <summary>
+        /// 回复数据
+        /// </summary>
         object ResponseData { get; set; }
     }
 }
