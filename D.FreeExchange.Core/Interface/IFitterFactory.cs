@@ -14,8 +14,8 @@ namespace D.FreeExchange.Core.Interface
         /// <summary>
         /// 根据 tag 的顺序生成一个 生产线，每个 tag 对应一种 fitter
         /// </summary>
-        /// <param name="tags"></param>
+        /// <param name="fitterTags"></param>
         /// <returns></returns>
-        IProductionLine Employ(params string[] tags);
+        IProductionLine Employ(params string[] fitterTags);
     }
 }
