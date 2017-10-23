@@ -14,7 +14,8 @@ namespace D.FreeExchange.Core.Interface
     public interface IActionCenter
     {
         /// <summary>
-        /// 执行请求，类 mvc
+        /// 执行请求，类 mvc，
+        /// 将执行的结果保存在 IContext 的 ResponseData
         /// </summary>
         /// <param name="context"></param>
         void Execute(IContext context);
