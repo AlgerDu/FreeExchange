@@ -54,6 +54,7 @@
     <Compile Include="Interface\IFitterFactory.cs" />
     <Compile Include="Interface\IFreeExchange.cs" />
     <Compile Include="Interface\IProductionLine.cs" />
+    <Compile Include="Interface\IProductPart.cs" />
     <Compile Include="Interface\IServer.cs" />
     <Compile Include="Interface\ISocketAsyncEventArgsPool.cs" />
     <Compile Include="Models\ClientDataEventArgs.cs" />
