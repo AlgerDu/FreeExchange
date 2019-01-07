@@ -36,4 +36,18 @@ namespace D.FreeExchange.Fitter.Young
         /// </summary>
         Byte
     }
+
+    /// <summary>
+    /// 组装包的阶段，不同的阶段，需要的字节数不同
+    /// </summary>
+    internal enum PackageCreateStage
+    {
+        Code,
+
+        Rayload,
+
+        ExRayload,
+
+        Data
+    }
 }

@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Core", "D.Fr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Fitter.Young", "D.FreeExchange.Fitter.Young\D.FreeExchange.Fitter.Young.csproj", "{57469ECF-EE6A-457F-B0B5-414847B10521}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Src", "Src", "{EC1814B7-2AA4-47B3-83B6-21BF75225080}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Abstractions", "D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj", "{4E0966D7-18C8-4654-8F79-1DFD7125C786}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,9 +25,16 @@ Global
 		{57469ECF-EE6A-457F-B0B5-414847B10521}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57469ECF-EE6A-457F-B0B5-414847B10521}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57469ECF-EE6A-457F-B0B5-414847B10521}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4E0966D7-18C8-4654-8F79-1DFD7125C786} = {EC1814B7-2AA4-47B3-83B6-21BF75225080}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {69A3729E-EE32-48FF-93C7-F932F72C8F33}
