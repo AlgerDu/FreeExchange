@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Fitter.Young
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Src", "Src", "{EC1814B7-2AA4-47B3-83B6-21BF75225080}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Abstractions", "D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj", "{4E0966D7-18C8-4654-8F79-1DFD7125C786}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "D.FreeExchange.Abstractions", "D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj", "{4E0966D7-18C8-4654-8F79-1DFD7125C786}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.FreeExchange.Transporter.Udp", "D.FreeExchange.Transporter.Udp\D.FreeExchange.Transporter.Udp.csproj", "{A9F36C9D-1064-4CF0-A486-2E441CCD04F7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,12 +31,17 @@ Global
 		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E0966D7-18C8-4654-8F79-1DFD7125C786}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9F36C9D-1064-4CF0-A486-2E441CCD04F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9F36C9D-1064-4CF0-A486-2E441CCD04F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9F36C9D-1064-4CF0-A486-2E441CCD04F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9F36C9D-1064-4CF0-A486-2E441CCD04F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4E0966D7-18C8-4654-8F79-1DFD7125C786} = {EC1814B7-2AA4-47B3-83B6-21BF75225080}
+		{A9F36C9D-1064-4CF0-A486-2E441CCD04F7} = {EC1814B7-2AA4-47B3-83B6-21BF75225080}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {69A3729E-EE32-48FF-93C7-F932F72C8F33}

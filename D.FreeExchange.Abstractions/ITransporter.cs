@@ -29,9 +29,8 @@ namespace D.FreeExchange
         /// <summary>
         /// 连接
         /// </summary>
-        /// <param name="connectSuccess">连接成功之后的 action</param>
         /// <returns>可能超时等等</returns>
-        Task<IResult> Connect(Action successAction);
+        Task<IResult> Connect();
 
         /// <summary>
         /// 关闭连接
