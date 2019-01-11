@@ -124,14 +124,37 @@ namespace D.FreeExchange
             }
             else
             {
-                return
-PayloadLength - _analysedBufferLength + 5;
+                return PayloadLength - _analysedBufferLength + 5;
             }
         }
 
         public byte[] ToBuffer()
         {
-            if ()
+            byte[] buffer = null;
+            if ((int)Code < 8)
+            {
+                buffer = new byte[3];
+            }
+            else
+            {
+                buffer = new byte[5 * PayloadLength];
+            }
+
+            buffer[0] = (byte)((Fin ? 1 : 0) >> 8);
+            buffer[0] = (byte)(buffer[0] & (int)Code);
+
+            buffer[1] = (byte)(Index << 8);
+            buffer[2] = (byte)(Index);
+
+            if ((int)Code >= 8)
+            {
+                buffer[3] = (byte)(PayloadLength << 8);
+                buffer[4] = (byte)(PayloadLength);
+
+                Array.Copy(buffer, 5, Data, 0, PayloadLength);
+            }
+
+            return buffer;
         }
     }
 }
