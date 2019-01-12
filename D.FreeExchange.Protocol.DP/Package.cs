@@ -4,20 +4,20 @@ using System.Text;
 
 namespace D.FreeExchange
 {
-    internal enum PackageCode
+    public enum PackageCode
     {
         Heart = 0,
         Disconnect = 1,
-        DataReceiveAnswer = 2,
-        LostData = 3,
-        BadData = 4,
+        Answer = 2,
+        Lost = 3,
+        Bad = 4,
 
         Text = 8,
         ByteDescription = 9,
         Byte = 10
     }
 
-    internal class Package
+    public class Package
     {
         /// <summary>
         /// 已经解析的数据长度
@@ -62,14 +62,16 @@ namespace D.FreeExchange
                 Code = (PackageCode)(buffer[offest] & 15);
 
                 offest++;
+                _analysedBufferLength++;
             }
 
             if (offest - index < length
                 && _analysedBufferLength == 1)
             {
-                Index = buffer[offest] >> 8;
+                Index = buffer[offest] << 8;
 
                 offest++;
+                _analysedBufferLength++;
             }
 
             if (offest - index < length
@@ -78,15 +80,17 @@ namespace D.FreeExchange
                 Index += buffer[offest];
 
                 offest++;
+                _analysedBufferLength++;
             }
 
             if (offest - index < length
                 && (int)Code >= 8
                 && _analysedBufferLength == 3)
             {
-                PayloadLength = buffer[offest] >> 8;
+                PayloadLength = buffer[offest] << 8;
 
                 offest++;
+                _analysedBufferLength++;
             }
 
             if (offest - index < length
@@ -110,6 +114,7 @@ namespace D.FreeExchange
                 Array.Copy(buffer, offest, Data, _analysedBufferLength - 5, enableLength);
 
                 offest += enableLength;
+                _analysedBufferLength += enableLength;
             }
 
             index = offest;
@@ -140,15 +145,15 @@ namespace D.FreeExchange
                 buffer = new byte[5 * PayloadLength];
             }
 
-            buffer[0] = (byte)((Fin ? 1 : 0) >> 8);
-            buffer[0] = (byte)(buffer[0] & (int)Code);
+            buffer[0] = (byte)((Fin ? 1 : 0) << 7);
+            buffer[0] = (byte)(buffer[0] + (byte)Code);
 
-            buffer[1] = (byte)(Index << 8);
+            buffer[1] = (byte)(Index >> 8);
             buffer[2] = (byte)(Index);
 
             if ((int)Code >= 8)
             {
-                buffer[3] = (byte)(PayloadLength << 8);
+                buffer[3] = (byte)(PayloadLength >> 8);
                 buffer[4] = (byte)(PayloadLength);
 
                 Array.Copy(buffer, 5, Data, 0, PayloadLength);
