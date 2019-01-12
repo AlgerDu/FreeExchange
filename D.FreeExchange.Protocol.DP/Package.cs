@@ -53,71 +53,71 @@ namespace D.FreeExchange
         /// <returns>还需要多少长度组成一个完整的包</returns>
         public int PushBuffer(byte[] buffer, ref int index, int length)
         {
-            var offest = index;
+            var offset = index;
 
-            if (offest - index < length
+            if (offset - index < length
                 && _analysedBufferLength == 0)
             {
-                Fin = (buffer[offest] & 128) > 0;
-                Code = (PackageCode)(buffer[offest] & 15);
+                Fin = (buffer[offset] & 128) > 0;
+                Code = (PackageCode)(buffer[offset] & 15);
 
-                offest++;
+                offset++;
                 _analysedBufferLength++;
             }
 
-            if (offest - index < length
+            if (offset - index < length
                 && _analysedBufferLength == 1)
             {
-                Index = buffer[offest] << 8;
+                Index = buffer[offset] << 8;
 
-                offest++;
+                offset++;
                 _analysedBufferLength++;
             }
 
-            if (offest - index < length
+            if (offset - index < length
                 && _analysedBufferLength == 2)
             {
-                Index += buffer[offest];
+                Index += buffer[offset];
 
-                offest++;
+                offset++;
                 _analysedBufferLength++;
             }
 
-            if (offest - index < length
+            if (offset - index < length
                 && (int)Code >= 8
                 && _analysedBufferLength == 3)
             {
-                PayloadLength = buffer[offest] << 8;
+                PayloadLength = buffer[offset] << 8;
 
-                offest++;
+                offset++;
                 _analysedBufferLength++;
             }
 
-            if (offest - index < length
+            if (offset - index < length
                 && (int)Code >= 8
                 && _analysedBufferLength == 4)
             {
-                PayloadLength += buffer[offest];
+                PayloadLength += buffer[offset];
                 Data = new byte[PayloadLength];
 
-                offest++;
+                offset++;
             }
 
-            if (offest - index < length
+            if (offset - index < length
                 && (int)Code >= 8
                 && _analysedBufferLength - 5 < PayloadLength)
             {
                 var enableLength =
-                    offest - index < PayloadLength - _analysedBufferLength + 5
-                    ? offest - index
+                    offset - index < PayloadLength - _analysedBufferLength + 5
+                    ? offset - index
                     : PayloadLength - _analysedBufferLength + 5;
-                Array.Copy(buffer, offest, Data, _analysedBufferLength - 5, enableLength);
+                Array.Copy(buffer, offset, Data, _analysedBufferLength - 5, enableLength);
 
-                offest += enableLength;
+                offset += enableLength;
                 _analysedBufferLength += enableLength;
             }
 
-            index = offest;
+            index = offset;
 
             if ((int)Code < 8)
             {
