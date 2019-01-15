@@ -9,6 +9,8 @@ namespace D.FreeExchange
 {
     public class DProtocolBuilder : IProtocolBuilder
     {
+        readonly Encoding _encoding = Encoding.ASCII;
+
         ILogger _logger;
 
         ITransporter _transporter;
@@ -30,7 +32,7 @@ namespace D.FreeExchange
 
         public Task<IResult> SendAsync(IProtocolPayload payload)
         {
-            throw new NotImplementedException();
+            return Task.Run(() => AddToSendQueueAndTryStartLoop(payload));
         }
 
         public void SetControlReceiveAction(Action<int> action)
@@ -50,6 +52,73 @@ namespace D.FreeExchange
         #endregion
 
         #region 发送，暂时先都写在这里，写完在考虑封装整理
+
+        const int _maxMarkIndex = 1024;
+
+        int _sendMarkOffest = 0;
+        int _sendIndex = 0;
+        byte[] _sendMark = new byte[_maxMarkIndex];
+        bool _sendLoopIsRunning = false;
+        object _sendLock = new object();
+
+        Queue<IProtocolPayload> _toSendPayloads = new Queue<IProtocolPayload>();
+
+        private IResult AddToSendQueueAndTryStartLoop(IProtocolPayload payload)
+        {
+            lock (_sendLock)
+            {
+                _toSendPayloads.Enqueue(payload);
+
+                if (!_sendLoopIsRunning)
+                {
+                    _sendLoopIsRunning = true;
+                    Task.Run(() => StartLoop());
+                }
+
+                return Result.CreateSuccess();
+            }
+        }
+
+        private void StartLoop()
+        {
+            IProtocolPayload payload;
+
+            lock (_sendLock)
+            {
+                if (_toSendPayloads.Count == 0)
+                {
+                    payload = null;
+                    _sendLoopIsRunning = false;
+                }
+                else
+                {
+                    payload = _toSendPayloads.Dequeue();
+                }
+            }
+
+            while (payload != null)
+            {
+                AnalysePayload(payload);
+
+                lock (_sendLock)
+                {
+                    if (_toSendPayloads.Count == 0)
+                    {
+                        payload = null;
+                        _sendLoopIsRunning = false;
+                    }
+                    else
+                    {
+                        payload = _toSendPayloads.Dequeue();
+                    }
+                }
+            }
+        }
+
+        private void AnalysePayload(IProtocolPayload payload)
+        {
+
+        }
 
         #endregion
 
