@@ -44,6 +44,14 @@ namespace D.FreeExchange
             _analysedBufferLength = 0;
         }
 
+        public Package(int payloadLength)
+        {
+            Fin = false;
+
+            PayloadLength = payloadLength;
+            Data = new byte[PayloadLength];
+        }
+
         /// <summary>
         /// 
         /// </summary>
