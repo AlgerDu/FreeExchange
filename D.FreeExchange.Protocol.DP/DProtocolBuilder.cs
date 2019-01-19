@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +40,15 @@ namespace D.FreeExchange
         #region IProtocolBuilder 实现
         public IProtocolBuilder Run()
         {
-            throw new NotImplementedException();
+            lock (this)
+            {
+                _builderRunning = true;
+
+                Task.Run(() => DistributeIndexTask());
+                Task.Run(() => SendTask());
+            }
+
+            return this;
         }
 
         public Task<IResult> SendAsync(IProtocolPayload payload)
@@ -59,7 +68,16 @@ namespace D.FreeExchange
 
         public IProtocolBuilder Stop()
         {
-            throw new NotImplementedException();
+            lock (this)
+            {
+                _builderRunning = false;
+
+                _distributeMre.Set();
+                _morePackagesMre.Set();
+                _morePaksToSendMre.Set();
+            }
+
+            return this;
         }
         #endregion
 
@@ -154,10 +172,15 @@ namespace D.FreeExchange
                 else
                 {
                     toDistributeIndexPackage.Index = _currSendIndex;
-                    _toSendPackages.Add(_currSendIndex, toDistributeIndexPackage);
+
+                    lock (_sendLock)
+                    {
+                        _toSendPackages.Add(_currSendIndex, toDistributeIndexPackage);
+                        _currSendIndex++;
+                    }
+
                     _morePaksToSendMre.Set();
 
-                    _currSendIndex++;
                 }
             }
         }
@@ -166,7 +189,52 @@ namespace D.FreeExchange
         {
             while (_builderRunning)
             {
-                if (_)
+                lock (_sendLock)
+                {
+                    if (_currSendIndex == _maxSendIndex && _toSendPackages.Count == 0)
+                    {
+                        if (_maxSendIndex >= _options.MaxPackageBuffer * 4)
+                        {
+                            _maxSendIndex = _options.MaxPackageBuffer;
+                            _currSendIndex = 0;
+                        }
+                        else
+                        {
+                            _maxSendIndex += _options.MaxPackageBuffer;
+                        }
+
+                        _morePackagesMre.Set();
+                    }
+                }
+
+                IEnumerable<int> toSendPakIndexs;
+
+                lock (_toSendPackages)
+                {
+                    toSendPakIndexs = _toSendPackages.Keys.OrderBy(i => i).ToArray();
+                }
+
+                if (toSendPakIndexs.Count() <= 0)
+                {
+                    _morePaksToSendMre.WaitOne();
+                }
+
+                foreach (var index in toSendPakIndexs)
+                {
+                    lock (_sendLock)
+                    {
+                        if (_toSendPackages.ContainsKey(index))
+                        {
+                            var pak = _toSendPackages[index];
+
+                            var buffer = pak.ToBuffer();
+
+                            _transporter.SendAsync(buffer, 0, buffer.Length);
+                        }
+                    }
+                }
+
+                System.Threading.Thread.Sleep(8);
             }
         }
 
@@ -196,8 +264,6 @@ namespace D.FreeExchange
                 packages.Add(package);
 
             } while (offeset < buffer.Length);
-
-            return packages;
         }
     }
 }
