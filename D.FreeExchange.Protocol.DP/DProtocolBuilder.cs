@@ -21,6 +21,8 @@ namespace D.FreeExchange
 
         bool _builderRunning;
 
+        Action<IProtocolPayload> _payloadReceiveAction;
+
         public DProtocolBuilder(
             ILogger<DProtocolBuilder> logger
             , IOptions<DProtocolBuilderOptions> options
@@ -35,6 +37,7 @@ namespace D.FreeExchange
             _builderRunning = false;
 
             InitSend();
+            InitReceive();
         }
 
         #region IProtocolBuilder 实现
@@ -47,6 +50,8 @@ namespace D.FreeExchange
                 Task.Run(() => DistributeIndexTask());
                 Task.Run(() => SendTask());
             }
+
+            _transporter.Connect();
 
             return this;
         }
@@ -63,7 +68,7 @@ namespace D.FreeExchange
 
         public void SetPayloadReceiveAction(Action<IProtocolPayload> action)
         {
-            throw new NotImplementedException();
+            _payloadReceiveAction = action;
         }
 
         public IProtocolBuilder Stop()
@@ -76,6 +81,8 @@ namespace D.FreeExchange
                 _morePackagesMre.Set();
                 _morePaksToSendMre.Set();
             }
+
+            _transporter.Close();
 
             return this;
         }
@@ -241,6 +248,211 @@ namespace D.FreeExchange
         #endregion
 
         #region 接收，和发送一样
+
+        object _receiveLock = new object();
+        int _receiveMinIndex;
+        int _receiveMaxIndex;
+
+        Dictionary<int, Package> _toPackPackages;
+        Dictionary<int, int> _receiveMark;
+
+        private void InitReceive()
+        {
+            _transporter.SetReceiveAction(TransporterReceivedBuffer);
+
+            _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
+            _receiveMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
+
+            _receiveMaxIndex = 0;
+            _receiveMaxIndex = _options.MaxPackageBuffer;
+
+            for (var i = 0; i < _options.MaxPackageBuffer * 4; i++)
+            {
+                _receiveMark.Add(i, 0);
+            }
+        }
+
+        private void TransporterReceivedBuffer(byte[] buffer, int index, int length)
+        {
+            //HACK 这里有一个前提是 UdpClient 处理的数据接收不完整的问题
+            var pakage = new Package();
+            var need = pakage.PushBuffer(buffer, ref index, length);
+
+            if (need > 0)
+            {
+                _logger.LogError($"HACK 出现了 udp 数据没有完整接收到的问题");
+                return;
+            }
+
+            switch (pakage.Code)
+            {
+                case PackageCode.Heart:
+                    DealHeart(pakage);
+                    break;
+                case PackageCode.Answer:
+                    DealAnswer(pakage);
+                    break;
+
+                case PackageCode.Text:
+                case PackageCode.ByteDescription:
+                case PackageCode.Byte:
+                    DealDataPak(pakage);
+                    break;
+                default:
+                    _logger.LogWarning($"尚未处理 Package.Code = {pakage.Code} 类型的 package");
+                    break;
+            }
+        }
+
+        private void DealHeart(Package package)
+        {
+            var buffer = package.ToBuffer();
+            _transporter.SendAsync(buffer, 0, buffer.Length);
+        }
+
+        private void DealAnswer(Package package)
+        {
+            lock (_sendLock)
+            {
+                if (_toSendPackages.ContainsKey(package.Index))
+                {
+                    _toSendPackages.Remove(package.Index);
+                }
+            }
+        }
+
+        private void DealDataPak(Package package)
+        {
+            var pakIndex = package.Index;
+
+            if (pakIndex >= _receiveMaxIndex
+             && pakIndex < _receiveMaxIndex + _options.MaxPackageBuffer)
+            {
+                lock (_receiveLock)
+                {
+                    _receiveMinIndex = _receiveMaxIndex;
+                    _receiveMaxIndex += _options.MaxPackageBuffer;
+
+                    for (var key = _receiveMinIndex; key < _receiveMaxIndex; key++)
+                    {
+                        _receiveMark[key] = 0;
+
+                        if (_toPackPackages.ContainsKey(key))
+                        {
+                            _toPackPackages.Remove(key);
+                        }
+                    }
+                }
+            }
+            else if (pakIndex < _options.MaxPackageBuffer
+                     && _receiveMaxIndex == _options.MaxPackageBuffer * 4)
+            {
+                lock (_receiveLock)
+                {
+                    _receiveMinIndex = 0;
+                    _receiveMaxIndex = _options.MaxPackageBuffer;
+
+                    for (var key = _receiveMinIndex; key < _receiveMaxIndex; key++)
+                    {
+                        _receiveMark[key] = 0;
+
+                        if (_toPackPackages.ContainsKey(key))
+                        {
+                            _toPackPackages.Remove(key);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                lock (_receiveLock)
+                {
+                    if (_receiveMark[pakIndex] == 0)
+                    {
+                        _toPackPackages.Add(pakIndex, package);
+
+                        if (package.Fin)
+                        {
+                            Task.Run(() => TryPackPackageTask(pakIndex));
+                        }
+                    }
+                }
+            }
+        }
+
+        private void TryPackPackageTask(int finIndex)
+        {
+            var can = false;
+            var offset = finIndex - 1;
+
+            while (true)
+            {
+                var mark = _receiveMark[offset];
+                if (mark == 0)
+                {
+                    break;
+                }
+                else if (mark == 2)
+                {
+                    can = true;
+                    break;
+                }
+                else
+                {
+                    offset--;
+                    if (offset == 0) offset = _options.MaxPackageBuffer * 4 - 1;
+                }
+            }
+
+            if (can)
+            {
+                List<Package> tmpPackages = new List<Package>();
+
+                lock (_receiveLock)
+                {
+                    while (offset != finIndex)
+                    {
+                        offset += 1;
+
+                        if (offset == _options.MaxPackageBuffer * 4) offset = 0;
+
+                        tmpPackages.Add(_toPackPackages[offset]);
+                        _toPackPackages.Remove(offset);
+                    }
+                }
+
+                var code = PackageCode.Text;
+                List<byte> buffer = new List<byte>();
+                var payload = new ProtocolPayload();
+
+                foreach (var package in tmpPackages)
+                {
+                    if (code == package.Code)
+                    {
+                        buffer.AddRange(package.Data);
+                    }
+                    else
+                    {
+                        PackBufferToPayload(buffer.ToArray(), code, payload);
+
+                        buffer.Clear();
+                        code = package.Code;
+                    }
+                }
+
+                PackBufferToPayload(buffer.ToArray(), code, payload);
+
+                _payloadReceiveAction?.Invoke(payload);
+            }
+        }
+
+        private void PackBufferToPayload(byte[] buffer, PackageCode code, ProtocolPayload payload)
+        {
+            if (code == PackageCode.Text)
+            {
+                payload.Text = _encoding.GetString(buffer.ToArray());
+            }
+        }
 
         #endregion
 
