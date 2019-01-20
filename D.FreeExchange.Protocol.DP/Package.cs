@@ -169,5 +169,10 @@ namespace D.FreeExchange
 
             return buffer;
         }
+
+        public override string ToString()
+        {
+            return $"Package[{Fin},{Code},{Index},{PayloadLength}]";
+        }
     }
 }

@@ -284,6 +284,8 @@ namespace D.FreeExchange
                 return;
             }
 
+            _logger.LogTrace($"接收到 {pakage}");
+
             switch (pakage.Code)
             {
                 case PackageCode.Heart:
@@ -363,21 +365,36 @@ namespace D.FreeExchange
                     }
                 }
             }
-            else
-            {
-                lock (_receiveLock)
-                {
-                    if (_receiveMark[pakIndex] == 0)
-                    {
-                        _toPackPackages.Add(pakIndex, package);
 
-                        if (package.Fin)
-                        {
-                            Task.Run(() => TryPackPackageTask(pakIndex));
-                        }
+            lock (_receiveLock)
+            {
+                if (_receiveMark[pakIndex] == 0)
+                {
+                    _toPackPackages.Add(pakIndex, package);
+
+                    SendAnswerPak(pakIndex);
+
+                    if (package.Fin)
+                    {
+                        Task.Run(() => TryPackPackageTask(pakIndex));
                     }
                 }
             }
+        }
+
+        private Task SendAnswerPak(int index)
+        {
+            return Task.Run(() =>
+            {
+                var pak = new Package();
+                pak.Fin = true;
+                pak.Code = PackageCode.Answer;
+                pak.Index = index;
+
+                var buffer = pak.ToBuffer();
+
+                _transporter.SendAsync(buffer, 0, buffer.Length);
+            });
         }
 
         private void TryPackPackageTask(int finIndex)

@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{57469ECF-EE6A-457F-B0B5-414847B10521}</ProjectGuid>
+    <ProjectGuid>{9312BCCE-9EA2-4A72-9D7C-F1DE5473806F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>D.FreeExchange.Fitter.Young</RootNamespace>
-    <AssemblyName>D.FreeExchange.Fitter.Young</AssemblyName>
+    <RootNamespace>D.FreeExchange.Core</RootNamespace>
+    <AssemblyName>D.FreeExchange.Core</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -43,11 +43,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enums.cs" />
-    <Compile Include="Package.cs" />
-    <Compile Include="PackageFactory.cs" />
+    <Compile Include="Fitters\SocketFitter.cs" />
+    <Compile Include="Interface\Enums.cs" />
+    <Compile Include="Interface\IBasket.cs" />
+    <Compile Include="Interface\IClient.cs" />
+    <Compile Include="Interface\IClientProxy.cs" />
+    <Compile Include="Interface\IContext.cs" />
+    <Compile Include="Interface\IActionCenter.cs" />
+    <Compile Include="Interface\IFitter.cs" />
+    <Compile Include="Interface\IFitterFactory.cs" />
+    <Compile Include="Interface\IFreeExchange.cs" />
+    <Compile Include="Interface\IProductionLine.cs" />
+    <Compile Include="Interface\IProductPart.cs" />
+    <Compile Include="Interface\IServer.cs" />
+    <Compile Include="Interface\ISocketAsyncEventArgsPool.cs" />
+    <Compile Include="Models\ClientDataEventArgs.cs" />
+    <Compile Include="Models\FitterReportEventArgs.cs" />
+    <Compile Include="SocketAsyncEventArgsPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="YoungFitter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
