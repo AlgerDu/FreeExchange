@@ -30,8 +30,8 @@ namespace D.FreeExchange
         /// <param name="action"></param>
         void SetControlReceiveAction(Action<int> action);
 
-        IProtocolBuilder Run();
+        Task<IResult> Run();
 
-        IProtocolBuilder Stop();
+        Task<IResult> Stop();
     }
 }

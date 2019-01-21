@@ -41,7 +41,7 @@ namespace D.FreeExchange
         }
 
         #region IProtocolBuilder 实现
-        public IProtocolBuilder Run()
+        public Task<IResult> Run()
         {
             lock (this)
             {
@@ -51,9 +51,7 @@ namespace D.FreeExchange
                 Task.Run(() => SendTask());
             }
 
-            _transporter.Connect();
-
-            return this;
+            return _transporter.Connect();
         }
 
         public Task<IResult> SendAsync(IProtocolPayload payload)
@@ -71,7 +69,7 @@ namespace D.FreeExchange
             _payloadReceiveAction = action;
         }
 
-        public IProtocolBuilder Stop()
+        public Task<IResult> Stop()
         {
             lock (this)
             {
@@ -82,9 +80,7 @@ namespace D.FreeExchange
                 _morePaksToSendMre.Set();
             }
 
-            _transporter.Close();
-
-            return this;
+            return _transporter.Close();
         }
         #endregion
 
