@@ -40,11 +40,7 @@ namespace D.FreeExchange
         /// <param name="sendTimeout">发送超时时间</param>
         /// <param name="receiveTimeout">接受超时时间</param>
         /// <returns>无特定类型的返回值</returns>
-        Task<IResult> SendAsync(
-            string url
-            , object[] param
-            , TimeSpan sendTimeout
-            , TimeSpan receiveTimeout);
+        Task<T> SendAsync<T>(IExchangeMessage msg) where T : IResult, new();
 
         /// <summary>
         /// 异步发送数据（泛型返回值）
@@ -55,33 +51,33 @@ namespace D.FreeExchange
         /// <param name="sendTimeout">发送超时时间</param>
         /// <param name="receiveTimeout">接受超时时间</param>
         /// <returns></returns>
-        Task<IResult<T>> SendAsync<T>(
-            string url
-            , object[] param
-            , TimeSpan sendTimeout
-            , TimeSpan receiveTimeout) where T : class, new();
+        //Task<IResult<T>> SendAsync<T>(
+        //    string url
+        //    , object[] param
+        //    , TimeSpan sendTimeout
+        //    , TimeSpan receiveTimeout) where T : class, new();
     }
 
     public static class IExchangeProxy_Extensions
     {
-        public static IResult Send(
-            this IExchangeProxy proxy
-            , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
-            )
-        {
-            var task = proxy.SendAsync(url, param, sendTimeout, receiveTimeout);
-            task.Wait();
-            return task.Result;
-        }
+        //public static T Send<T>(
+        //    this IExchangeProxy proxy
+        //    , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
+        //    ) where T : IResult, new()
+        //{
+        //    var task = proxy.SendAsync<T>(url, param, sendTimeout, receiveTimeout);
+        //    task.Wait();
+        //    return task.Result;
+        //}
 
-        public static IResult<T> Send<T>(
-            this IExchangeProxy proxy
-            , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
-            ) where T : class, new()
-        {
-            var task = proxy.SendAsync<T>(url, param, sendTimeout, receiveTimeout);
-            task.Wait();
-            return task.Result;
-        }
+        //public static IResult<T> SendAsync<T>(
+        //    this IExchangeProxy proxy
+        //    , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
+        //    ) where T : class, new()
+        //{
+        //    var task = proxy.SendAsync<IResult<T>>(url, param, sendTimeout, receiveTimeout);
+        //    task.Wait();
+        //    return task.Result;
+        //}
     }
 }

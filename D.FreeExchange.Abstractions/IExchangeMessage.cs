@@ -11,11 +11,9 @@ namespace D.FreeExchange
     /// </summary>
     public interface IExchangeMessage
     {
-        Guid Uid { get; }
+        string Url { get; }
 
-        IEnumerable<object> Request { get; }
-
-        object Response { get; }
+        object[] Params { get; }
 
         TimeSpan SendTimeout { get; }
 
