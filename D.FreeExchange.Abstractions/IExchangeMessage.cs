@@ -15,8 +15,6 @@ namespace D.FreeExchange
 
         object[] Params { get; }
 
-        TimeSpan SendTimeout { get; }
-
-        TimeSpan ReceiveTimeout { get; }
+        TimeSpan Timeout { get; }
     }
 }
