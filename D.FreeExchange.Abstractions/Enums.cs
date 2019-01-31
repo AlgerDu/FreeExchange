@@ -9,13 +9,13 @@ namespace D.FreeExchange
     /// </summary>
     public enum ExchangeMessageState
     {
-        Create,
-        Sending,
-        Recevied,
-        Processing,
-        ProcessTimeout,
-        Responsing,
-        Complete
+        Create = 0,
+        Sending = 1,
+        Recevied = 2,
+        Processing = 3,
+        ProcessTimeout = 4,
+        Responsing = 5,
+        Complete = 6
     }
 
     /// <summary>
