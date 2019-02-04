@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.8.1" />
     <PackageReference Include="D.Utils.Result" Version="1.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
@@ -13,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj" />
+    <ProjectReference Include="..\D.FreeExchange.Protocol.DP\D.FreeExchange.Protocol.DP.csproj" />
+    <ProjectReference Include="..\D.FreeExchange.Transporter.Udp\D.FreeExchange.Transporter.Udp.csproj" />
   </ItemGroup>
 
 </Project>
