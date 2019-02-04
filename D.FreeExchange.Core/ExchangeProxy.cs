@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using D.Utils;
@@ -12,6 +13,7 @@ namespace D.FreeExchange.Core
     {
         protected ILogger _logger;
         protected IProtocolBuilder _protocol;
+        protected IActionExecutor _executor;
 
         protected string _Address;
         protected Guid _uid;
@@ -30,14 +32,19 @@ namespace D.FreeExchange.Core
             ILogger logger
             , string address
             , IProtocolBuilder protocol
+            , IActionExecutor executor
             )
         {
             _logger = logger;
 
             _Address = address;
             _protocol = protocol;
+            _executor = executor;
 
             _sendMsgCaches = new Dictionary<Guid, ExchangeMessageCache>();
+
+            _protocol.SetPayloadReceiveAction(this.ProtocolReceivePayload);
+            _protocol.SetControlReceiveAction(this.ProtocolReceiveControl);
         }
 
         #region ExchangeProxy 行为
@@ -50,19 +57,13 @@ namespace D.FreeExchange.Core
         {
             return Task.Run<T>(() =>
             {
-                var cache = new ExchangeMessageCache(msg);
-                _sendMsgCaches.Add(cache.Uid, cache);
+                var cache = AnalyseRequestAndCache(msg);
 
-                MsgToPayload(new ExchangeMessageForPayload
-                {
-                    Uid = cache.Uid,
-                    Params = cache.Params,
-                    Url = cache.Url,
-                    State = cache.State
-                });
+                SendRequestMsg(cache);
 
                 var timeout = !cache.TCS.Task.Wait(msg.Timeout);
 
+                // 发送超时
                 if (timeout)
                 {
                     if (cache.State <= ExchangeMessageState.Sending)
@@ -77,6 +78,7 @@ namespace D.FreeExchange.Core
                     }
                 }
 
+                //接收返回结果超时
                 if (timeout)
                 {
                     if (cache.State <= ExchangeMessageState.ProcessTimeout)
@@ -92,23 +94,175 @@ namespace D.FreeExchange.Core
                     return CreateErrorResult<T>(taskRst.Code, taskRst.Msg);
                 }
 
-                return (T)cache.Response;
+                try
+                {
+                    //TODO 解析返回值
+                    return AnalyeResponse<T>(cache);
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResult<T>((int)ExchangeCode.ResponseTypeError, ex.ToString());
+                }
             });
         }
         #endregion
 
-        private async void SendCacheMsg(ExchangeMessageCache cache)
-        {
-            cache.State = ExchangeMessageState.Sending;
+        #region 接收
 
-            var jsonStr = JsonConvert.SerializeObject(cache);
+        private void ProtocolReceiveControl(int ctlCode)
+        {
+
+        }
+
+        private void ProtocolReceivePayload(IProtocolPayload payload)
+        {
+            var msg = JsonConvert.DeserializeObject<ExchangeMessageForPayload>(payload.Text);
+
+            switch (msg.State)
+            {
+                case ExchangeMessageState.Sending:
+                    DealSendingMsg(msg);
+                    break;
+
+                case ExchangeMessageState.Recevied:
+                    DealReceviedMsg(msg);
+                    break;
+
+                case ExchangeMessageState.Complete:
+                    DealCompleteMsg(msg);
+                    break;
+
+                default:
+                    _logger.LogWarning($"{msg.Uid} 暂时不处理的 message state {msg.State}");
+                    break;
+            }
+        }
+
+        private void DealSendingMsg(ExchangeMessageForPayload msg)
+        {
+            SendRecevieResponse(msg);
+
+            var executeRst = _executor.InvokeAction(new ExchangeMessage
+            {
+                Url = msg.Url,
+                Params = new object[] { msg.ResponseJsonStr },
+                Timeout = msg.Timeout.Value
+            });
+
+            var response = new ExchangeMessageForPayload();
+
+            if (executeRst.IsSuccess())
+            {
+                response.Code = ExchangeCode.OK;
+                response.ResponseJsonStr = JsonConvert.SerializeObject(executeRst.Data);
+                response.State = ExchangeMessageState.Complete;
+                response.Uid = msg.Uid;
+            }
+            else
+            {
+                response.Code = ExchangeCode.ActionExecuteError;
+                response.State = ExchangeMessageState.Processing;
+                response.Uid = msg.Uid;
+                response.Msg = executeRst.Msg;
+            }
+
+            SendMsg(response);
+        }
+
+        private void DealReceviedMsg(ExchangeMessageForPayload msg)
+        {
+            if (_sendMsgCaches.ContainsKey(msg.Uid.Value))
+            {
+                var cache = _sendMsgCaches[msg.Uid.Value];
+
+                cache.State = ExchangeMessageState.Processing;
+            }
+            else
+            {
+                _logger.LogWarning($"收到 ExchangeMessageState.Recevied 回复，但是 {msg.Uid} 已经不在缓存中");
+            }
+        }
+
+        private void DealCompleteMsg(ExchangeMessageForPayload msg)
+        {
+            if (_sendMsgCaches.ContainsKey(msg.Uid.Value))
+            {
+                var cache = _sendMsgCaches[msg.Uid.Value];
+
+                cache.State = ExchangeMessageState.Complete;
+                cache.ResponseJsonStr = msg.ResponseJsonStr;
+
+                cache.TCS.SetResult(Result.CreateSuccess());
+            }
+            else
+            {
+                _logger.LogWarning($"收到 ExchangeMessageState.Complete 回复，但是 {msg.Uid} 已经不在缓存中");
+            }
+        }
+
+        /// <summary>
+        /// 发送收到的回复
+        /// </summary>
+        /// <param name="msg"></param>
+        private void SendRecevieResponse(ExchangeMessageForPayload msg)
+        {
+            var response = new ExchangeMessageForPayload
+            {
+                Uid = msg.Uid,
+                State = ExchangeMessageState.Recevied
+            };
+
+            SendMsg(response);
+        }
+
+        #endregion
+
+        private ExchangeMessageCache AnalyseRequestAndCache(IExchangeMessage msg)
+        {
+            var cache = new ExchangeMessageCache()
+            {
+                Timeout = msg.Timeout,
+                Url = msg.Url
+            };
+
+            cache.RequestJsonStr = JsonConvert.SerializeObject(msg.Params);
+
+            _sendMsgCaches.Add(cache.Uid.Value, cache);
+
+            return cache;
+        }
+
+        private T AnalyeResponse<T>(ExchangeMessageCache cache)
+        {
+            return JsonConvert.DeserializeObject<T>(cache.ResponseJsonStr);
+        }
+
+        private Task<IResult> SendMsg(ExchangeMessageForPayload msg)
+        {
+            var jsonStr = JsonConvert.SerializeObject(msg);
 
             var payload = new ProtocolPayload
             {
                 Text = jsonStr
             };
 
-            var proRst = await _protocol.SendAsync(payload);
+            return _protocol.SendAsync(payload);
+        }
+
+        private async void SendRequestMsg(ExchangeMessageCache cache)
+        {
+            cache.State = ExchangeMessageState.Sending;
+
+            var msg = new ExchangeMessageCache
+            {
+                Uid = cache.Uid,
+                Url = cache.Url,
+                RequestJsonStr = cache.RequestJsonStr,
+                ByteDescriptions = cache.ByteDescriptions,
+                State = cache.State
+            };
+
+            var proRst = await SendMsg(msg);
 
             if (!proRst.IsSuccess())
             {

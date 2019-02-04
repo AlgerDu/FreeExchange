@@ -29,7 +29,9 @@ namespace D.FreeExchange
         SentTimeout = 3001,
         ReceivceTimeout = 3002,
         SentBufferFull = 3003,
+        ResponseTypeError = 3004,
 
-        ActionExecuteError = 4001
+        ActionExecuteError = 4001,
+        ActionErrorType = 4002
     }
 }

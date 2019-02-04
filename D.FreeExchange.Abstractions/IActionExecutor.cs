@@ -1,4 +1,5 @@
-﻿using System;
+﻿using D.Utils;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,6 +15,6 @@ namespace D.FreeExchange
         /// </summary>
         /// <param name="msg"></param>
         /// <returns></returns>
-        object InvokeAction(IExchangeMessage msg);
+        IResult<object> InvokeAction(IExchangeMessage msg);
     }
 }
