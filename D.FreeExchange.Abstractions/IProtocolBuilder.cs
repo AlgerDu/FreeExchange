@@ -11,27 +11,42 @@ namespace D.FreeExchange
     /// </summary>
     public interface IProtocolBuilder
     {
-        /// <summary>
-        /// 发送数据
-        /// </summary>
-        /// <param name="payload"></param>
-        /// <returns></returns>
-        Task<IResult> SendAsync(IProtocolPayload payload);
-
-        /// <summary>
-        /// 收到数据的回调
-        /// </summary>
-        /// <param name="action"></param>
-        void SetPayloadReceiveAction(Action<IProtocolPayload> action);
-
-        /// <summary>
-        /// 设置控制的接受
-        /// </summary>
-        /// <param name="action"></param>
-        void SetControlReceiveAction(Action<int> action);
-
         Task<IResult> Run();
 
         Task<IResult> Stop();
+
+        /// <summary>
+        /// 向 IProtocolBuilder 推送需要解析的 buffer 数据
+        /// </summary>
+        /// <param name="buffer">byte 数组</param>
+        /// <param name="offset">偏移量</param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        IResult PushBuffer(byte[] buffer, int offset, int length);
+
+        /// <summary>
+        /// 向 IProtocolBuilder 推送需要解析的 payload 数据
+        /// </summary>
+        /// <param name="payload"></param>
+        /// <returns></returns>
+        Task<IResult> PushPayload(IProtocolPayload payload);
+
+        /// <summary>
+        /// 设置接收到 IProtocolPayload 的回调函数
+        /// </summary>
+        /// <param name="action"></param>
+        void SetReceivedPayloadAction(Action<IProtocolPayload> action);
+
+        /// <summary>
+        /// 设置接收到控制命令的回调函数
+        /// </summary>
+        /// <param name="action"></param>
+        void SetReceivedControlAction(Action<int> action);
+
+        /// <summary>
+        /// 设置当需要发送 buffer 数据时的回调函数
+        /// </summary>
+        /// <param name="action"></param>
+        void SetSendBufferAction(Action<byte[], int, int> action);
     }
 }
