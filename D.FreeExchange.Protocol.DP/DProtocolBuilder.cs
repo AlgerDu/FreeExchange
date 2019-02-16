@@ -15,22 +15,19 @@ namespace D.FreeExchange
         readonly Encoding _encoding = Encoding.ASCII;
 
         ILogger _logger;
-        ITransporter _transporter;
-
         DProtocolBuilderOptions _options;
-
         bool _builderRunning;
 
-        Action<IProtocolPayload> _payloadReceiveAction;
+        Action<IProtocolPayload> _receivedPayloadAction;
+        Action<int> _receivedControlAction;
+        Action<byte[], int, int> _sendBufferAction;
 
         public DProtocolBuilder(
             ILogger<DProtocolBuilder> logger
             , IOptions<DProtocolBuilderOptions> options
-            , ITransporter transporter
             )
         {
             _logger = logger;
-            _transporter = transporter;
 
             _options = options.Value;
 
@@ -43,44 +40,62 @@ namespace D.FreeExchange
         #region IProtocolBuilder 实现
         public Task<IResult> Run()
         {
-            lock (this)
+            return Task.Run<IResult>(() =>
             {
-                _builderRunning = true;
+                lock (this)
+                {
+                    _builderRunning = true;
 
-                Task.Run(() => DistributeIndexTask());
-                Task.Run(() => SendTask());
-            }
+                    Task.Run(() => DistributeIndexTask());
+                    Task.Run(() => SendTask());
+                }
 
-            return _transporter.Connect();
-        }
-
-        public Task<IResult> SendAsync(IProtocolPayload payload)
-        {
-            return Task.Run(() => AnalysePayloadToPackage(payload));
-        }
-
-        public void SetControlReceiveAction(Action<int> action)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetPayloadReceiveAction(Action<IProtocolPayload> action)
-        {
-            _payloadReceiveAction = action;
+                return Result.CreateSuccess();
+            });
         }
 
         public Task<IResult> Stop()
         {
-            lock (this)
+            return Task.Run<IResult>(() =>
             {
-                _builderRunning = false;
+                lock (this)
+                {
+                    _builderRunning = false;
 
-                _distributeMre.Set();
-                _morePackagesMre.Set();
-                _morePaksToSendMre.Set();
-            }
+                    _distributeMre.Set();
+                    _morePackagesMre.Set();
+                    _morePaksToSendMre.Set();
+                }
 
-            return _transporter.Close();
+                return Result.CreateSuccess();
+            });
+        }
+
+        public void SetReceivedPayloadAction(Action<IProtocolPayload> action)
+        {
+            _receivedPayloadAction = action;
+        }
+
+        public void SetReceivedControlAction(Action<int> action)
+        {
+            _receivedControlAction = action;
+        }
+
+        public void SetSendBufferAction(Action<byte[], int, int> action)
+        {
+            _sendBufferAction = action;
+        }
+
+        public IResult PushBuffer(byte[] buffer, int offset, int length)
+        {
+            TransporterReceivedBuffer(buffer, offset, length);
+
+            return Result.CreateSuccess();
+        }
+
+        public Task<IResult> PushPayload(IProtocolPayload payload)
+        {
+            return Task.Run(() => AnalysePayloadToPackage(payload));
         }
         #endregion
 
@@ -232,7 +247,7 @@ namespace D.FreeExchange
 
                             var buffer = pak.ToBuffer();
 
-                            _transporter.SendAsync(buffer, 0, buffer.Length);
+                            _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
                         }
                     }
                 }
@@ -254,8 +269,6 @@ namespace D.FreeExchange
 
         private void InitReceive()
         {
-            _transporter.SetReceiveAction(TransporterReceivedBuffer);
-
             _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
             _receiveMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
 
@@ -305,7 +318,7 @@ namespace D.FreeExchange
         private void DealHeart(Package package)
         {
             var buffer = package.ToBuffer();
-            _transporter.SendAsync(buffer, 0, buffer.Length);
+            _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
         }
 
         private void DealAnswer(Package package)
@@ -389,7 +402,7 @@ namespace D.FreeExchange
 
                 var buffer = pak.ToBuffer();
 
-                _transporter.SendAsync(buffer, 0, buffer.Length);
+                _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
             });
         }
 
@@ -455,7 +468,7 @@ namespace D.FreeExchange
 
                 PackBufferToPayload(buffer.ToArray(), code, payload);
 
-                _payloadReceiveAction?.Invoke(payload);
+                _receivedPayloadAction?.Invoke(payload);
             }
         }
 
