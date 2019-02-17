@@ -42,27 +42,4 @@ namespace D.FreeExchange
         /// <returns>无特定类型的返回值</returns>
         Task<T> SendAsync<T>(IExchangeMessage msg) where T : IResult, new();
     }
-
-    public static class IExchangeProxy_Extensions
-    {
-        //public static T Send<T>(
-        //    this IExchangeProxy proxy
-        //    , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
-        //    ) where T : IResult, new()
-        //{
-        //    var task = proxy.SendAsync<T>(url, param, sendTimeout, receiveTimeout);
-        //    task.Wait();
-        //    return task.Result;
-        //}
-
-        //public static IResult<T> SendAsync<T>(
-        //    this IExchangeProxy proxy
-        //    , string url, object[] param, TimeSpan sendTimeout, TimeSpan receiveTimeout
-        //    ) where T : class, new()
-        //{
-        //    var task = proxy.SendAsync<IResult<T>>(url, param, sendTimeout, receiveTimeout);
-        //    task.Wait();
-        //    return task.Result;
-        //}
-    }
 }

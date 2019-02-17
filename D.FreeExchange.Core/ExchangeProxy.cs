@@ -14,6 +14,7 @@ namespace D.FreeExchange.Core
         protected ILogger _logger;
         protected IProtocolBuilder _protocol;
         protected IActionExecutor _executor;
+        protected ITransporter _transporter;
 
         protected string _Address;
         protected Guid _uid;
@@ -32,6 +33,7 @@ namespace D.FreeExchange.Core
             ILogger logger
             , string address
             , IProtocolBuilder protocol
+            , ITransporter transporter
             , IActionExecutor executor
             )
         {
@@ -39,17 +41,22 @@ namespace D.FreeExchange.Core
 
             _Address = address;
             _protocol = protocol;
+            _transporter = transporter;
             _executor = executor;
 
             _sendMsgCaches = new Dictionary<Guid, ExchangeMessageCache>();
 
-            _protocol.SetPayloadReceiveAction(this.ProtocolReceivePayload);
-            _protocol.SetControlReceiveAction(this.ProtocolReceiveControl);
+            _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
+            _protocol.SetReceivedControlAction(this.ProtocolReceiveControl);
+            _protocol.SetSendBufferAction(this.SendBufferAction);
+
+            _transporter.SetReceiveAction(this.TransporterReceivedBuffer);
         }
 
         #region ExchangeProxy 行为
         public Task<IResult> Disconnect()
         {
+            _transporter.Close();
             return _protocol.Stop();
         }
 
@@ -109,9 +116,19 @@ namespace D.FreeExchange.Core
 
         #region 接收
 
+        private void TransporterReceivedBuffer(byte[] buffer, int offset, int length)
+        {
+            _protocol.PushBuffer(buffer, offset, length);
+        }
+
         private void ProtocolReceiveControl(int ctlCode)
         {
 
+        }
+
+        private void SendBufferAction(byte[] buffer, int offest, int length)
+        {
+            _transporter.SendAsync(buffer, offest, length);
         }
 
         private void ProtocolReceivePayload(IProtocolPayload payload)
@@ -246,7 +263,7 @@ namespace D.FreeExchange.Core
                 Text = jsonStr
             };
 
-            return _protocol.SendAsync(payload);
+            return _protocol.PushPayload(payload);
         }
 
         private async void SendRequestMsg(ExchangeMessageCache cache)
