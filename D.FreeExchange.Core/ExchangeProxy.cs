@@ -26,41 +26,27 @@ namespace D.FreeExchange.Core
 
         public bool Online => true;
 
-        public string Address => _Address;
+        public string Address => _transporter?.Address;
         #endregion
 
         public ExchangeProxy(
             ILogger logger
-            , string address
-            , IProtocolBuilder protocol
-            , ITransporter transporter
-            , IActionExecutor executor
             )
         {
             _logger = logger;
 
-            _Address = address;
-            _protocol = protocol;
-            _transporter = transporter;
-            _executor = executor;
-
             _sendMsgCaches = new Dictionary<Guid, ExchangeMessageCache>();
-
-            _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
-            _protocol.SetReceivedControlAction(this.ProtocolReceiveControl);
-            _protocol.SetSendBufferAction(this.SendBufferAction);
-
-            _transporter.SetReceiveAction(this.TransporterReceivedBuffer);
         }
 
         #region ExchangeProxy 行为
-        public Task<IResult> Disconnect()
+
+        public virtual Task<IResult> Disconnect()
         {
             _transporter.Close();
             return _protocol.Stop();
         }
 
-        public Task<T> SendAsync<T>(IExchangeMessage msg) where T : IResult, new()
+        public virtual Task<T> SendAsync<T>(IExchangeMessage msg) where T : IResult, new()
         {
             return Task.Run<T>(() =>
             {
@@ -113,6 +99,17 @@ namespace D.FreeExchange.Core
             });
         }
         #endregion
+
+        protected virtual IResult Run()
+        {
+            _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
+            _protocol.SetReceivedControlAction(this.ProtocolReceiveControl);
+            _protocol.SetSendBufferAction(this.SendBufferAction);
+
+            _transporter.SetReceiveAction(this.TransporterReceivedBuffer);
+
+            return Result.CreateSuccess();
+        }
 
         #region 接收
 

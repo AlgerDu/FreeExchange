@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using D.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace D.FreeExchange.Core
@@ -14,18 +15,23 @@ namespace D.FreeExchange.Core
 
         public IDictionary<string, string> Session => _session;
 
-        public IPEndPoint EndPoint { get; private set; }
-
         public ExchangeClientProxy(
             ILogger<ExchangeClientProxy> logger
-            , IPEndPoint endPoint
+            , ITransporter transporter
             , IProtocolBuilder protocol
             , IActionExecutor executor
-            ) : base(logger, endPoint.ToString(), protocol, executor)
+            ) : base(logger)
         {
-            EndPoint = endPoint;
-
             _session = new Dictionary<string, string>();
+
+            _executor = executor;
+            _protocol = protocol;
+            _transporter = transporter;
+        }
+
+        IResult IExchangeClientProxy.Run()
+        {
+            return base.Run();
         }
     }
 }

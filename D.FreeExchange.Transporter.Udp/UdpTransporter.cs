@@ -18,10 +18,13 @@ namespace D.FreeExchange
 
         UdpClient _client;
         IPEndPoint _sender;
+        string _address;
 
         Action<byte[], int, int> _receiveBufferAction;
 
         public IPEndPoint Sender => _sender;
+
+        public string Address => _address;
 
         public UdpTransporter(
             ILogger<UdpTransporter> logger
@@ -33,6 +36,8 @@ namespace D.FreeExchange
 
             _client = client;
             _sender = sender;
+
+            _address = sender.ToString();
         }
 
         /// <summary>
