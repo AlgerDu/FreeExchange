@@ -12,6 +12,11 @@ namespace D.FreeExchange
     public interface ITransporter
     {
         /// <summary>
+        /// 搬运的地址
+        /// </summary>
+        string Address { get; }
+
+        /// <summary>
         /// 发送 buffer 到远程
         /// </summary>
         /// <param name="buffer">字节数组</param>
