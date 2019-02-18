@@ -18,10 +18,10 @@ namespace D.FreeExchange.Core
         public UdpTransporter Transporter { get; set; }
     }
 
-    public class ExchangeUdpServer
+    public class UdpExchangeServer
         : IExchangeServer
     {
-        ILogger<ExchangeUdpServer> _logger;
+        ILogger<UdpExchangeServer> _logger;
         ILifetimeScope _scope;
 
         int _listenPort;
@@ -29,8 +29,8 @@ namespace D.FreeExchange.Core
         Dictionary<string, ClientCache> _clientProxies;
         UdpClient _server;
 
-        public ExchangeUdpServer(
-            ILogger<ExchangeUdpServer> logger
+        public UdpExchangeServer(
+            ILogger<UdpExchangeServer> logger
             , int listenPort
             , ILifetimeScope scope
             )
@@ -90,7 +90,9 @@ namespace D.FreeExchange.Core
 
         private async void DealBuffer(byte[] buffer, IPEndPoint endPoint)
         {
-            //看看这个 end point 所对应的客户端还在不在，在的话继续处理；不在了要重新生成一个客户端
+            //看看这个 end point 所对应的客户端还在不在，
+            //在的话继续处理；
+            //不在了要重新生成一个客户端
             var cache = FindClientProxyByEndpoint(endPoint);
 
             if (cache == null)

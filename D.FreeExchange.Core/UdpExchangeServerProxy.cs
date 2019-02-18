@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace D.FreeExchange.Core
 {
-    public class ExchangeUdpServerProxy
+    public class UdpExchangeServerProxy
         : ExchangeProxy
         , IExchangeServerProxy
     {
-        public ExchangeUdpServerProxy(
+        public UdpExchangeServerProxy(
             ILogger logger
             , string address
             , IProtocolBuilder protocol
