@@ -1,69 +1,40 @@
-﻿using System;
+﻿using D.Utils;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using D.Utils;
-using Microsoft.Extensions.Logging;
 
 namespace D.FreeExchange
 {
     /// <summary>
     /// Upd Transporter
     /// </summary>
-    public class UdpTransporter : ITransporter
+    public abstract class TemplateUdpTransporter : ITransporter
     {
-        ILogger _logger;
+        protected ILogger _logger;
 
-        UdpClient _client;
-        IPEndPoint _sender;
-        string _address;
+        protected UdpClient _client;
+        protected IPEndPoint _sender;
+        protected string _address;
 
-        Action<byte[], int, int> _receiveBufferAction;
+        protected Action<byte[], int, int> _receiveBufferAction;
 
-        public IPEndPoint Sender => _sender;
+        public virtual IPEndPoint Sender => _sender;
 
-        public string Address => _address;
+        public virtual string Address => _address;
 
-        public UdpTransporter(
-            ILogger<UdpTransporter> logger
-            , UdpClient client
-            , IPEndPoint sender
+        public TemplateUdpTransporter(
+            ILogger logger
             )
         {
             _logger = logger;
-
-            _client = client;
-            _sender = sender;
-
-            _address = sender.ToString();
-        }
-
-        /// <summary>
-        /// 暂时性的尝试
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="index"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        public Task ServerReceiveBuffer(byte[] buffer, int index, int length)
-        {
-            return Task.Run(() =>
-            {
-                _logger.LogTrace($"{this} 收到了 {length} 个 byte 的数据");
-
-                if (_receiveBufferAction == null)
-                {
-                    _logger.LogWarning($"UdpTransporter ReceiveBufferAction is null");
-                }
-
-                _receiveBufferAction?.Invoke(buffer, index, length);
-            });
         }
 
         #region ITransporter 实现
-        public Task<IResult> Close()
+        public virtual Task<IResult> Close()
         {
             return Task.Run<IResult>(() =>
             {
@@ -71,15 +42,16 @@ namespace D.FreeExchange
             });
         }
 
-        public Task<IResult> Connect()
+        public virtual Task<IResult> Connect()
         {
             return Task.Run<IResult>(() =>
             {
+                _client?.Close();
                 return Result.CreateSuccess();
             });
         }
 
-        public Task<IResult> SendAsync(byte[] buffer, int index, int length)
+        public virtual Task<IResult> SendAsync(byte[] buffer, int index, int length)
         {
             return Task.Run<IResult>(() =>
             {
@@ -110,7 +82,7 @@ namespace D.FreeExchange
             });
         }
 
-        public void SetReceiveAction(Action<byte[], int, int> action)
+        public virtual void SetReceiveAction(Action<byte[], int, int> action)
         {
             _receiveBufferAction = action;
         }
