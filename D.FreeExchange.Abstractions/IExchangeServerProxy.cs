@@ -18,10 +18,10 @@ namespace D.FreeExchange
         Task<IResult> Connect();
 
         /// <summary>
-        /// 更新服务器的地址
+        /// 更新服务代理的 transporter
         /// </summary>
-        /// <param name="newAddress"></param>
+        /// <param name="transporter"></param>
         /// <returns></returns>
-        IResult UpdateAddress(string newAddress);
+        IResult UpdateTransporter(ITransporter transporter);
     }
 }
