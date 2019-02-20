@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace D.FreeExchange
 {
-    public class ClientProxyUdpTransporter :
+    public class UdpClientProxyTransporter :
         TemplateUdpTransporter
         , ITransporter
     {
-        public ClientProxyUdpTransporter(
-            ILogger<ClientProxyUdpTransporter> logger
+        public UdpClientProxyTransporter(
+            ILogger<UdpClientProxyTransporter> logger
             , UdpClient client
             , IPEndPoint sender
             ) : base(logger)

@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace D.FreeExchange
 {
-    public class ServerProxyUdpTransporter :
+    public class UdpServerProxyTransporter :
         TemplateUdpTransporter
         , ITransporter
     {
-        public ServerProxyUdpTransporter(
-            ILogger<ServerProxyUdpTransporter> logger
+        public UdpServerProxyTransporter(
+            ILogger<UdpServerProxyTransporter> logger
             , string address
             ) : base(logger)
         {
