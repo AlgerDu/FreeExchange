@@ -15,7 +15,7 @@ namespace D.FreeExchange.Core
     {
         public ExchangeClientProxy Proxy { get; set; }
 
-        public UdpTransporter Transporter { get; set; }
+        public UdpClientProxyTransporter Transporter { get; set; }
     }
 
     public class UdpExchangeServer
@@ -105,8 +105,9 @@ namespace D.FreeExchange.Core
 
         private ClientCache CreateClientProxy(IPEndPoint endPoint)
         {
-            var transpoter = _scope.Resolve<UdpTransporter>(
+            var transpoter = _scope.Resolve<UdpClientProxyTransporter>(
                 new TypedParameter(typeof(IPEndPoint), endPoint)
+                , new TypedParameter(typeof(UdpClient), _server)
                 );
 
             var client = _scope.Resolve<ExchangeClientProxy>(

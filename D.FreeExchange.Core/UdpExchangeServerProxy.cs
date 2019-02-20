@@ -12,20 +12,29 @@ namespace D.FreeExchange.Core
         , IExchangeServerProxy
     {
         public UdpExchangeServerProxy(
-            ILogger logger
-            , string address
+            ILogger<UdpExchangeServerProxy> logger
             , IProtocolBuilder protocol
             , IActionExecutor executor
-            ) : base(logger, address, protocol, executor)
+            ) : base(logger)
         {
+            _protocol = protocol;
+            _executor = executor;
         }
 
         public Task<IResult> Connect()
         {
-            throw new NotImplementedException();
+            return Task.Run(() =>
+            {
+                return base.Run();
+            });
         }
 
         public IResult UpdateAddress(string newAddress)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IResult UpdateTransporter(ITransporter transporter)
         {
             throw new NotImplementedException();
         }
