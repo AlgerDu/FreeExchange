@@ -17,4 +17,11 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj" />
+    <ProjectReference Include="..\D.FreeExchange.Core\D.FreeExchange.Core.csproj" />
+    <ProjectReference Include="..\D.FreeExchange.Protocol.DP\D.FreeExchange.Protocol.DP.csproj" />
+    <ProjectReference Include="..\D.FreeExchange.Transporter.Udp\D.FreeExchange.Transporter.Udp.csproj" />
+  </ItemGroup>
+
 </Project>
