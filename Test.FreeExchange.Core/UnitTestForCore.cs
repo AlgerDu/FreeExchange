@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using D.FreeExchange;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -10,14 +11,37 @@ namespace Test.FreeExchange.Core
     {
         readonly IContainer container;
 
+        IExchangeServer _server;
+
         public UnitTestForCore()
+        {
+            container = CreateContainer();
+
+            RunTestServer();
+        }
+
+        /// <summary>
+        /// 构建容器
+        /// </summary>
+        /// <returns></returns>
+        private IContainer CreateContainer()
         {
             var builder = new ContainerBuilder();
 
-            builder.AddLogging();
+            builder.AddMicrosoftExtensions();
             builder.AddFreeExchangeCore();
 
-            container = builder.Build();
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// 启动测试用 UdpServer
+        /// </summary>
+        private void RunTestServer()
+        {
+            _server = container.Resolve<IExchangeServer>();
+
+            _server.Run();
         }
 
         [TestMethod]
@@ -27,22 +51,17 @@ namespace Test.FreeExchange.Core
     }
 
     /// <summary>
-    /// TODO 迁移到 Core 中，这里相当于是在使用的过程中进行完善
+    /// 
     /// </summary>
     public static class ActofacExtensions
     {
-        public static void AddLogging(this ContainerBuilder builder)
+        public static void AddMicrosoftExtensions(this ContainerBuilder builder)
         {
             var service = new ServiceCollection();
             service.AddLogging();
             service.AddOptions();
 
             builder.Populate(service);
-        }
-
-        public static void AddFreeExchangeCore(this ContainerBuilder builder)
-        {
-
         }
     }
 }
