@@ -14,7 +14,8 @@ namespace D.FreeExchange
         /// 执行 aciton
         /// </summary>
         /// <param name="msg"></param>
+        /// <param name="clientProxy"></param>
         /// <returns></returns>
-        IResult<object> InvokeAction(IExchangeMessage msg);
+        IResult<object> InvokeAction(IExchangeMessage msg, IExchangeClientProxy clientProxy);
     }
 }
