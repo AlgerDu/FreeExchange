@@ -60,7 +60,7 @@ namespace Test.FreeExchange.Core
             var service = new ServiceCollection();
             service.AddLogging();
             service.AddOptions();
-
+            
             builder.Populate(service);
         }
     }

@@ -110,16 +110,23 @@ namespace D.FreeExchange.Core
                 {
                     if (IsOkClassType(type))
                     {
-                        foreach (var m in type.GetMethods())
+                        var ctlName = type.Name.ToLower();
+                        ctlName = ctlName.EndsWith("controller")
+                            ? ctlName.Remove(ctlName.Length - 10, 10) : ctlName;
+
+                        foreach (var m in type.GetMethods(
+                            BindingFlags.Public
+                            | BindingFlags.Instance))
                         {
-                            if (m.IsPublic
-                                && !m.IsAbstract)
+                            if (!m.IsSpecialName
+                                && m.DeclaringType != typeof(object)
+                                )
                             {
                                 var item = new ActionItems
                                 {
                                     Action = m,
                                     ControllerType = type,
-                                    Url = $"{controllerType.Name}/{m.Name}"
+                                    Url = $"{ctlName}/{m.Name.ToLower()}"
                                 };
 
                                 if (_urlToActions.ContainsKey(item.Url))
