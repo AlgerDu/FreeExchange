@@ -206,7 +206,7 @@ namespace D.FreeExchange.Core
 
         private void PreDealController(object controller, IExchangeClientProxy proxy)
         {
-            var p = typeof(IExchangeController).GetProperty("Client");
+            var p = controller.GetType().GetProperty("Client");
             p.SetValue(controller, proxy);
         }
     }
