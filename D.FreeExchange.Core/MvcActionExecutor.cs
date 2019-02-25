@@ -51,7 +51,7 @@ namespace D.FreeExchange.Core
 
         public IResult<object> InvokeAction(IActionExecuteMessage msg)
         {
-            var url = msg.Url;
+            var url = msg.Url.ToLower();
 
             var items = _urlToActions[url];
 

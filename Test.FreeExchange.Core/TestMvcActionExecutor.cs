@@ -12,6 +12,13 @@ using System.Text;
 
 namespace Test.FreeExchange.Core
 {
+    public enum TestEnum
+    {
+        One,
+        Two,
+        Three
+    }
+
     public class TestController : IExchangeController
     {
         public IExchangeProxy Proxy { get; private set; }
@@ -33,6 +40,11 @@ namespace Test.FreeExchange.Core
         public int Sum(int a, int b)
         {
             return a + b;
+        }
+
+        public TestEnum EnumForward(TestEnum test)
+        {
+            return (TestEnum)(((int)test + 1) % 3);
         }
     }
 
@@ -76,6 +88,15 @@ namespace Test.FreeExchange.Core
             var rst = _executor.InvokeAction(msg);
 
             Assert.AreEqual(rst.Data, a + b);
+        }
+
+        [TestMethod]
+        public void TestEnumAction()
+        {
+            var msg = CreateMsg("test/enumForward", TestEnum.Three);
+            var rst = _executor.InvokeAction(msg);
+
+            Assert.AreEqual(rst.Data, TestEnum.One);
         }
 
         private IActionExecuteMessage CreateMsg(string url, params object[] requestParams)
