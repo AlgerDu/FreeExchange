@@ -7,6 +7,7 @@ using Autofac;
 using D.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace D.FreeExchange.Core
@@ -66,7 +67,7 @@ namespace D.FreeExchange.Core
 
             foreach (var item in items)
             {
-                var tryRst = TryResoleActionParams(item.Action.GetParameters(), paramsJson);
+                var tryRst = TryResoleActionParams(item.Action.GetParameters(), msg);
 
                 if (tryRst.IsSuccess())
                 {
@@ -187,18 +188,21 @@ namespace D.FreeExchange.Core
             };
         }
 
-        private IResult<object[]> TryResoleActionParams(ParameterInfo[] parameters, string json)
+        private IResult<object[]> TryResoleActionParams(ParameterInfo[] parameters, IActionExecuteMessage msg)
         {
-            var jarray = JArray.Parse(json);
+            if (parameters.Length != msg.Params.Length)
+            {
+                return Result.CreateError<object[]>();
+            }
 
             List<object> rst = new List<object>();
 
             for (var i = 0; i < parameters.Length; i++)
             {
                 var ptype = parameters[i].ParameterType;
-                var jobject = jarray[i];
+                var jsonStr = msg.Params[i] as string;
 
-                rst.Add(jobject.ToObject(ptype));
+                rst.Add(JsonConvert.DeserializeObject(jsonStr, ptype));
             }
 
             return Result.CreateSuccess<object[]>(rst.ToArray());
@@ -206,8 +210,11 @@ namespace D.FreeExchange.Core
 
         private void PreDealController(object controller, IExchangeProxy proxy)
         {
-            var p = controller.GetType().GetProperty("Client");
-            p.SetValue(controller, proxy);
+            if (proxy != null)
+            {
+                var p = controller.GetType().GetProperty("Client");
+                p.SetValue(controller, proxy);
+            }
         }
     }
 }

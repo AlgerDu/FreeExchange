@@ -12,4 +12,11 @@ namespace D.FreeExchange
 
         public TimeSpan Timeout { get; set; }
     }
+
+    public class ActionExecuteMessage : ExchangeMessage, IActionExecuteMessage
+    {
+        public IExchangeProxy Proxy { get; set; }
+
+        public IEnumerable<IByteDescription> ByteDescriptions { get; set; }
+    }
 }

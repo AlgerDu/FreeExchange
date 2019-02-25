@@ -156,12 +156,12 @@ namespace D.FreeExchange.Core
         {
             SendRecevieResponse(msg);
 
-            var executeRst = _executor.InvokeAction(new ExchangeMessage
+            var executeRst = _executor.InvokeAction(new ActionExecuteMessage
             {
                 Url = msg.Url,
                 Params = new object[] { msg.ResponseJsonStr },
                 Timeout = msg.Timeout.Value
-            }, null);
+            });
             //TODO 上面有问题
 
             var response = new ExchangeMessageForPayload();

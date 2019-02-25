@@ -14,7 +14,7 @@ namespace Test.FreeExchange.Core
 {
     public class TestController : IExchangeController
     {
-        public IExchangeClientProxy Client { get; private set; }
+        public IExchangeProxy Proxy { get; private set; }
 
         ILogger _logger;
 
@@ -61,7 +61,7 @@ namespace Test.FreeExchange.Core
         {
             var msg = CreateMsg("test/value", "test");
 
-            var rst = _executor.InvokeAction(msg, null);
+            var rst = _executor.InvokeAction(msg);
 
             Assert.AreEqual(rst.Data, "test");
         }
@@ -73,19 +73,22 @@ namespace Test.FreeExchange.Core
             var b = 4;
 
             var msg = CreateMsg("test/sum", a, b);
-            var rst = _executor.InvokeAction(msg, null);
+            var rst = _executor.InvokeAction(msg);
 
             Assert.AreEqual(rst.Data, a + b);
         }
 
-        private IExchangeMessage CreateMsg(string url, params object[] requestParams)
+        private IActionExecuteMessage CreateMsg(string url, params object[] requestParams)
         {
-            var jsonStr = JsonConvert.SerializeObject(requestParams);
+            for (var i = 0; i < requestParams.Length; i++)
+            {
+                requestParams[i] = JsonConvert.SerializeObject(requestParams[i]);
+            }
 
-            return new ExchangeMessage
+            return new ActionExecuteMessage
             {
                 Url = url,
-                Params = new object[] { jsonStr }
+                Params = requestParams
             };
         }
 
