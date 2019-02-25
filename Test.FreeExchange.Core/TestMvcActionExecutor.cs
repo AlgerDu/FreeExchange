@@ -29,6 +29,11 @@ namespace Test.FreeExchange.Core
         {
             return v;
         }
+
+        public int Sum(int a, int b)
+        {
+            return a + b;
+        }
     }
 
     [TestClass]
@@ -59,6 +64,18 @@ namespace Test.FreeExchange.Core
             var rst = _executor.InvokeAction(msg, null);
 
             Assert.AreEqual(rst.Data, "test");
+        }
+
+        [TestMethod]
+        public void TestSumAction()
+        {
+            var a = 3;
+            var b = 4;
+
+            var msg = CreateMsg("test/sum", a, b);
+            var rst = _executor.InvokeAction(msg, null);
+
+            Assert.AreEqual(rst.Data, a + b);
         }
 
         private IExchangeMessage CreateMsg(string url, params object[] requestParams)

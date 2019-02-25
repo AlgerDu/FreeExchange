@@ -6,6 +6,6 @@ namespace D.FreeExchange
 {
     public interface IExchangeController
     {
-        IExchangeClientProxy Client { get; }
+        IExchangeProxy Client { get; }
     }
 }
