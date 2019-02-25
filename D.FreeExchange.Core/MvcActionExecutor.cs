@@ -48,7 +48,7 @@ namespace D.FreeExchange.Core
             DiAllControllerType();
         }
 
-        public IResult<object> InvokeAction(IExchangeMessage msg, IExchangeClientProxy clientProxy)
+        public IResult<object> InvokeAction(IActionExecuteMessage msg)
         {
             var url = msg.Url;
 
@@ -80,7 +80,7 @@ namespace D.FreeExchange.Core
             {
                 var controller = _scope.Resolve(actionItem.ControllerType);
 
-                PreDealController(controller, clientProxy);
+                PreDealController(controller, msg.Proxy);
 
                 var actionRst = actionItem.Action.Invoke(controller, actionParams);
 
@@ -204,7 +204,7 @@ namespace D.FreeExchange.Core
             return Result.CreateSuccess<object[]>(rst.ToArray());
         }
 
-        private void PreDealController(object controller, IExchangeClientProxy proxy)
+        private void PreDealController(object controller, IExchangeProxy proxy)
         {
             var p = controller.GetType().GetProperty("Client");
             p.SetValue(controller, proxy);
