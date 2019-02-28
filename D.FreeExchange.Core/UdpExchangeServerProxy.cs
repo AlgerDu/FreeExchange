@@ -29,14 +29,11 @@ namespace D.FreeExchange.Core
             });
         }
 
-        public IResult UpdateAddress(string newAddress)
-        {
-            throw new NotImplementedException();
-        }
-
         public IResult UpdateTransporter(ITransporter transporter)
         {
-            throw new NotImplementedException();
+            _transporter = transporter;
+
+            return Result.CreateSuccess();
         }
     }
 }

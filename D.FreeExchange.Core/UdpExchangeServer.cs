@@ -29,6 +29,12 @@ namespace D.FreeExchange.Core
         Dictionary<string, ClientCache> _clientProxies;
         UdpClient _server;
 
+        /// <summary>
+        /// TOTO 构造函数应该注入一个 options 感觉这样比较好
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="listenPort"></param>
+        /// <param name="scope"></param>
         public UdpExchangeServer(
             ILogger<UdpExchangeServer> logger
             , int listenPort
@@ -105,10 +111,7 @@ namespace D.FreeExchange.Core
 
         private ClientCache CreateClientProxy(IPEndPoint endPoint)
         {
-            var transpoter = _scope.Resolve<UdpClientProxyTransporter>(
-                new TypedParameter(typeof(IPEndPoint), endPoint)
-                , new TypedParameter(typeof(UdpClient), _server)
-                );
+            var transpoter = _scope.ResolveUdpClientProxyTransporter(endPoint, _server);
 
             var client = _scope.Resolve<ExchangeClientProxy>(
                 new TypedParameter(typeof(IPEndPoint), endPoint)
