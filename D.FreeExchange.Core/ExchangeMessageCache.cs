@@ -35,7 +35,7 @@ namespace D.FreeExchange.Core
 
         public string Url { get; set; }
 
-        public string RequestJsonStr { get; set; }
+        public string[] RequestJsonStrs { get; set; }
 
         public string ResponseJsonStr { get; set; }
 

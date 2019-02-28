@@ -240,7 +240,12 @@ namespace D.FreeExchange.Core
                 Url = msg.Url
             };
 
-            cache.RequestJsonStr = JsonConvert.SerializeObject(msg.Params);
+            List<string> jsons = new List<string>(msg.Params.Length);
+
+            foreach (var p in msg.Params)
+            {
+                jsons.Add(JsonConvert.SerializeObject(p));
+            }
 
             _sendMsgCaches.Add(cache.Uid.Value, cache);
 
@@ -272,7 +277,7 @@ namespace D.FreeExchange.Core
             {
                 Uid = cache.Uid,
                 Url = cache.Url,
-                RequestJsonStr = cache.RequestJsonStr,
+                RequestJsonStrs = cache.RequestJsonStrs,
                 ByteDescriptions = cache.ByteDescriptions,
                 State = cache.State
             };
