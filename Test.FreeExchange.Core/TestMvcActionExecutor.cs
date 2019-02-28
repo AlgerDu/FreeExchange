@@ -19,6 +19,13 @@ namespace Test.FreeExchange.Core
         Three
     }
 
+    public enum TestEnum2
+    {
+        A = 1,
+        B = 2,
+        C = 4
+    }
+
     public class TestController : IExchangeController
     {
         public IExchangeProxy Proxy { get; private set; }
@@ -45,6 +52,11 @@ namespace Test.FreeExchange.Core
         public TestEnum EnumForward(TestEnum test)
         {
             return (TestEnum)(((int)test + 1) % 3);
+        }
+
+        public bool EnumValue(TestEnum2 enum2)
+        {
+            return (enum2 & TestEnum2.A) == TestEnum2.A;
         }
     }
 
@@ -97,6 +109,20 @@ namespace Test.FreeExchange.Core
             var rst = _executor.InvokeAction(msg);
 
             Assert.AreEqual(rst.Data, TestEnum.One);
+        }
+
+        [TestMethod]
+        public void TestEnum2Action()
+        {
+            var msg = CreateMsg("test/EnumValue", TestEnum2.A | TestEnum2.B);
+            var rst = _executor.InvokeAction(msg);
+
+            Assert.AreEqual(rst.Data, true);
+
+            msg = CreateMsg("test/EnumValue", TestEnum2.C | TestEnum2.B);
+            rst = _executor.InvokeAction(msg);
+
+            Assert.AreEqual(rst.Data, false);
         }
 
         private IActionExecuteMessage CreateMsg(string url, params object[] requestParams)
