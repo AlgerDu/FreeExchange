@@ -10,6 +10,8 @@ namespace D.FreeExchange.Core
     {
         public TaskCompletionSource<IResult> TCS { get; set; }
 
+        public List<IByteDescription> ByteDescriptions { get; set; }
+
         public ExchangeMessageCache()
         {
             Uid = Guid.NewGuid();
@@ -38,8 +40,6 @@ namespace D.FreeExchange.Core
         public string[] RequestJsonStrs { get; set; }
 
         public string ResponseJsonStr { get; set; }
-
-        public List<IByteDescription> ByteDescriptions { get; set; }
 
         public TimeSpan? Timeout { get; set; }
     }

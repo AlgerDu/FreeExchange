@@ -46,14 +46,13 @@ namespace D.FreeExchange
 
         private void ReceivedData(IAsyncResult ar)
         {
-            var client = ar.AsyncState as UdpClient;
+            //var client = ar.AsyncState as UdpClient;
+            
+            var buffer = _client.EndReceive(ar, ref _sender);
 
-            var endpoint = new IPEndPoint(IPAddress.Any, 0);
-            var buffer = client.EndReceive(ar, ref endpoint);
+            DealBuffer(buffer, _sender);
 
-            DealBuffer(buffer, endpoint);
-
-            client.BeginReceive(ReceivedData, client);
+            _client.BeginReceive(ReceivedData, _client);
         }
 
         private async void DealBuffer(byte[] buffer, IPEndPoint endPoint)

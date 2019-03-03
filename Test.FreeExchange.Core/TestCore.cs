@@ -2,10 +2,12 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using D.FreeExchange;
 using D.FreeExchange.Core;
+using D.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Reflection;
 
 namespace Test.FreeExchange.Core
@@ -21,6 +23,11 @@ namespace Test.FreeExchange.Core
             )
         {
             _logger = logger;
+        }
+
+        public IResult<int> Sum(int a, int b)
+        {
+            return Result.CreateSuccess<int>(a + b);
         }
     }
 
@@ -82,11 +89,23 @@ namespace Test.FreeExchange.Core
         [TestMethod]
         public void TestConnectToServer()
         {
-            var transporter = _container.ResolveUdpServerProxyTransporter("localhost:8066");
+            var transporter = _container.ResolveUdpServerProxyTransporter("127.0.0.1:8066");
 
             var serverProxy = _container.Resolve<UdpExchangeServerProxy>();
             serverProxy.UpdateTransporter(transporter);
-            serverProxy.Connect();
+            serverProxy.Connect().Wait();
+
+            var t = serverProxy.SendAsync<Result<int>>(new ExchangeMessage
+            {
+                Url = "testcore/sum",
+                Params = new object[] { 4, 5 },
+                Timeout = TimeSpan.FromSeconds(20)
+            });
+
+            t.Wait();
+
+
+            Assert.AreEqual(t.Result.Data, 9);
         }
     }
 

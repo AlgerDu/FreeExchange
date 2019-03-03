@@ -38,6 +38,7 @@ namespace D.FreeExchange
         {
             return Task.Run<IResult>(() =>
             {
+                _client?.Close();
                 return Result.CreateSuccess();
             });
         }
@@ -46,7 +47,6 @@ namespace D.FreeExchange
         {
             return Task.Run<IResult>(() =>
             {
-                _client?.Close();
                 return Result.CreateSuccess();
             });
         }

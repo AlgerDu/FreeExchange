@@ -108,6 +108,9 @@ namespace D.FreeExchange.Core
 
             _transporter.SetReceiveAction(this.TransporterReceivedBuffer);
 
+            _protocol.Run();
+            _transporter.Connect();
+
             return Result.CreateSuccess();
         }
 
@@ -247,6 +250,8 @@ namespace D.FreeExchange.Core
                 jsons.Add(JsonConvert.SerializeObject(p));
             }
 
+            cache.RequestJsonStrs = jsons.ToArray();
+
             _sendMsgCaches.Add(cache.Uid.Value, cache);
 
             return cache;
@@ -259,7 +264,16 @@ namespace D.FreeExchange.Core
 
         private Task<IResult> SendMsg(ExchangeMessageForPayload msg)
         {
-            var jsonStr = JsonConvert.SerializeObject(msg);
+            var tmp = new ExchangeMessageForPayload
+            {
+                Url = msg.Url,
+                Uid = msg.Uid,
+                RequestJsonStrs = msg.RequestJsonStrs,
+                State = msg.State,
+                Timestamp = msg.Timestamp
+            };
+
+            var jsonStr = JsonConvert.SerializeObject(tmp);
 
             var payload = new ProtocolPayload
             {
