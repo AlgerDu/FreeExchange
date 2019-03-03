@@ -76,6 +76,7 @@ namespace D.FreeExchange.Core
         {
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, _listenPort);
             _server = new UdpClient(ipep);
+            _server.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
             _server.BeginReceive(ServiceReceivedData, _server);
 
@@ -117,6 +118,8 @@ namespace D.FreeExchange.Core
                 new TypedParameter(typeof(IPEndPoint), endPoint)
                 , new TypedParameter(typeof(ITransporter), transpoter)
                 );
+
+            client.Run();
 
             var cache = new ClientCache
             {

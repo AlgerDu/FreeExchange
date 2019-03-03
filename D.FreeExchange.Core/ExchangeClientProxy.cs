@@ -29,7 +29,7 @@ namespace D.FreeExchange.Core
             _transporter = transporter;
         }
 
-        IResult IExchangeClientProxy.Run()
+        public override IResult Run()
         {
             return base.Run();
         }

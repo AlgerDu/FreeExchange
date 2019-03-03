@@ -32,6 +32,37 @@ namespace D.FreeExchange
             return base.Connect();
         }
 
+        public override Task<IResult> SendAsync(byte[] buffer, int index, int length)
+        {
+            return Task.Run<IResult>(() =>
+            {
+                try
+                {
+                    var toSend = buffer;
+
+                    if (index != 0)
+                    {
+                        throw new Exception("暂时不支持 index > 0 的情况");
+                    }
+
+                    var sendByteNum = _client.Send(toSend, length);
+
+                    if (sendByteNum != length)
+                    {
+                        _logger.LogWarning($"{this} 需要发送 {length} 个字节，但是只发送了 {sendByteNum} 个");
+                    }
+
+                    return Result.CreateSuccess();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"{this} 发送数据的过程中出现异常:{ex}");
+
+                    return Result.CreateError();
+                }
+            });
+        }
+
         private void AnylseAddress()
         {
             var arr = _address.Split(':');
@@ -42,12 +73,13 @@ namespace D.FreeExchange
             _sender = new IPEndPoint(ipa, port);
 
             _client = new UdpClient();
+            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         }
 
         private void ReceivedData(IAsyncResult ar)
         {
             //var client = ar.AsyncState as UdpClient;
-            
+
             var buffer = _client.EndReceive(ar, ref _sender);
 
             DealBuffer(buffer, _sender);
@@ -59,7 +91,11 @@ namespace D.FreeExchange
         {
             await Task.Run(() =>
             {
-                _receiveBufferAction?.Invoke(buffer, 0, buffer.Length);
+                //_receiveBufferAction?.Invoke(buffer, 0, buffer.Length);
+                if (_receiveBufferAction != null)
+                {
+                    _receiveBufferAction(buffer, 0, buffer.Length);
+                }
             });
         }
     }

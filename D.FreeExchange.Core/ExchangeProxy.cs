@@ -100,7 +100,7 @@ namespace D.FreeExchange.Core
         }
         #endregion
 
-        protected virtual IResult Run()
+        public virtual IResult Run()
         {
             _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
             _protocol.SetReceivedControlAction(this.ProtocolReceiveControl);

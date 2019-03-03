@@ -120,6 +120,7 @@ namespace D.FreeExchange
         /// 已经分配好 index 等待发送的 packages
         /// </summary>
         Dictionary<int, Package> _toSendPackages;
+        Dictionary<int, int> _sentMark;
 
         /// <summary>
         /// 初始化 send 相关的一些数据
@@ -127,7 +128,8 @@ namespace D.FreeExchange
         private void InitSend()
         {
             _toDistributeIndexPackages = new Queue<Package>(_options.MaxPackageBuffer);
-            _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer);
+            _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
+            _sentMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
 
             _distributeMre = new ManualResetEvent(false);
             _morePackagesMre = new ManualResetEvent(false);
@@ -135,6 +137,11 @@ namespace D.FreeExchange
 
             _maxSendIndex = _options.MaxPackageBuffer;
             _currSendIndex = 0;
+
+            for (var i = 0; i < _options.MaxPackageBuffer * 4; i++)
+            {
+                _sentMark.Add(i, 0);
+            }
         }
 
         private IResult AnalysePayloadToPackage(IProtocolPayload payload)
@@ -148,7 +155,7 @@ namespace D.FreeExchange
             {
                 if (_toDistributeIndexPackages.Count + packages.Count > _options.MaxPackageBuffer)
                 {
-                    return Result.CreateError();
+                    return Result.CreateError("缓存已满");
                 }
                 else
                 {
@@ -194,11 +201,11 @@ namespace D.FreeExchange
                     lock (_sendLock)
                     {
                         _toSendPackages.Add(_currSendIndex, toDistributeIndexPackage);
+                        _sentMark[_currSendIndex] = 1;
                         _currSendIndex++;
                     }
 
                     _morePaksToSendMre.Set();
-
                 }
             }
         }
@@ -229,7 +236,7 @@ namespace D.FreeExchange
 
                 lock (_toSendPackages)
                 {
-                    toSendPakIndexs = _toSendPackages.Keys.OrderBy(i => i).ToArray();
+                    toSendPakIndexs = _sentMark.Keys.Where(kk => _sentMark[kk] == 1).ToArray();
                 }
 
                 if (toSendPakIndexs.Count() <= 0)
@@ -247,12 +254,16 @@ namespace D.FreeExchange
 
                             var buffer = pak.ToBuffer();
 
-                            _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
+                            //_sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, _sendBufferAction.EndInvoke, null);
+                            if (_sendBufferAction != null)
+                            {
+                                _sendBufferAction(buffer, 0, buffer.Length);
+                            }
+
+                            _sentMark[index] = 2;
                         }
                     }
                 }
-
-                System.Threading.Thread.Sleep(8);
             }
         }
 
@@ -318,7 +329,10 @@ namespace D.FreeExchange
         private void DealHeart(Package package)
         {
             var buffer = package.ToBuffer();
-            _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
+            if (_sendBufferAction != null)
+            {
+                _sendBufferAction(buffer, 0, buffer.Length);
+            }
         }
 
         private void DealAnswer(Package package)
@@ -500,6 +514,8 @@ namespace D.FreeExchange
                 Array.Copy(buffer, offeset, package.Data, 0, length);
 
                 packages.Add(package);
+
+                offeset += length;
 
             } while (offeset < buffer.Length);
         }

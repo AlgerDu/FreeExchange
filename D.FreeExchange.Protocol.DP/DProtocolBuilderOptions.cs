@@ -24,9 +24,16 @@ namespace D.FreeExchange
         public int MaxPackageBuffer { get; set; }
 
         /// <summary>
-        /// 心跳时间间隔，仅客户端有效
+        /// 心跳时间间隔，仅客户端有效（s）
         /// </summary>
         [DefaultValue(10)]
         public int HeartInterval { get; set; }
+
+        public DProtocolBuilderOptions()
+        {
+            MaxPayloadDataLength = 65536;
+            MaxPackageBuffer = 2048;
+            HeartInterval = 10;
+        }
     }
 }
