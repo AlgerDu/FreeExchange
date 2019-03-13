@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "D.FreeExchange.Core", "D.Fr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{58141609-D62F-45FD-9D70-A3385391A774}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.FreeExchange.Core", "Test.FreeExchange.Core\Test.FreeExchange.Core.csproj", "{DB050126-856B-4B06-9A64-A4960A15D3B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.FreeExchange.Core", "Test.FreeExchange.Core\Test.FreeExchange.Core.csproj", "{DB050126-856B-4B06-9A64-A4960A15D3B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.Extensions.Autofac.Microsoft", "Extensions\D.Extensions.Autofac.Microsoft\D.Extensions.Autofac.Microsoft.csproj", "{54E38C17-B30B-443B-AA97-BA64D1488A25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{DB050126-856B-4B06-9A64-A4960A15D3B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB050126-856B-4B06-9A64-A4960A15D3B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB050126-856B-4B06-9A64-A4960A15D3B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54E38C17-B30B-443B-AA97-BA64D1488A25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54E38C17-B30B-443B-AA97-BA64D1488A25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54E38C17-B30B-443B-AA97-BA64D1488A25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54E38C17-B30B-443B-AA97-BA64D1488A25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,6 +68,7 @@ Global
 		{E05CB811-D453-4D8B-B12D-04B6219F453E} = {95FFE75C-30BD-4A7D-B039-77D6295FA444}
 		{9934E7D9-B154-4BD4-A6F9-ADAD78850BF2} = {EC1814B7-2AA4-47B3-83B6-21BF75225080}
 		{DB050126-856B-4B06-9A64-A4960A15D3B4} = {95FFE75C-30BD-4A7D-B039-77D6295FA444}
+		{54E38C17-B30B-443B-AA97-BA64D1488A25} = {EC1814B7-2AA4-47B3-83B6-21BF75225080}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {69A3729E-EE32-48FF-93C7-F932F72C8F33}
