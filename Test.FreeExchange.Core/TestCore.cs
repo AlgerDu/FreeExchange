@@ -99,7 +99,7 @@ namespace Test.FreeExchange.Core
             {
                 Url = "testcore/sum",
                 Params = new object[] { 4, 5 },
-                Timeout = TimeSpan.FromSeconds(20)
+                Timeout = TimeSpan.FromSeconds(120)
             });
 
             t.Wait();

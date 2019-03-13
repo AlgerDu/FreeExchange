@@ -109,16 +109,19 @@ namespace D.FreeExchange
                 Data = new byte[PayloadLength];
 
                 offset++;
+                _analysedBufferLength++;
             }
 
             if (offset - index < length
                 && (int)Code >= 8
                 && _analysedBufferLength - 5 < PayloadLength)
             {
+                var need = PayloadLength + 5 - _analysedBufferLength;
+
                 var enableLength =
-                    offset - index < PayloadLength - _analysedBufferLength + 5
-                    ? offset - index
-                    : PayloadLength - _analysedBufferLength + 5;
+                    buffer.Length - offset < need
+                    ? buffer.Length - offset
+                    : need;
                 Array.Copy(buffer, offset, Data, _analysedBufferLength - 5, enableLength);
 
                 offset += enableLength;
@@ -150,7 +153,7 @@ namespace D.FreeExchange
             }
             else
             {
-                buffer = new byte[5 * PayloadLength];
+                buffer = new byte[5 + PayloadLength];
             }
 
             buffer[0] = (byte)((Fin ? 1 : 0) << 7);

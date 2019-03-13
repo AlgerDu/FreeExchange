@@ -280,7 +280,7 @@ namespace D.FreeExchange
 
         private void InitReceive()
         {
-            _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
+            _toPackPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
             _receiveMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
 
             _receiveMaxIndex = 0;
@@ -416,7 +416,7 @@ namespace D.FreeExchange
 
                 var buffer = pak.ToBuffer();
 
-                _sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, null, null);
+                _sendBufferAction?.Invoke(buffer, 0, buffer.Length);
             });
         }
 
@@ -513,9 +513,11 @@ namespace D.FreeExchange
 
                 Array.Copy(buffer, offeset, package.Data, 0, length);
 
+                offeset += length;
+
+                if (offeset >= buffer.Length) package.Fin = true;
                 packages.Add(package);
 
-                offeset += length;
 
             } while (offeset < buffer.Length);
         }
