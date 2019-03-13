@@ -7,13 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="4.9.1" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.3.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.3.2" />
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj" />
     <ProjectReference Include="..\D.FreeExchange.Protocol.DP\D.FreeExchange.Protocol.DP.csproj" />
+    <ProjectReference Include="..\Extensions\D.Extensions.Autofac.Microsoft\D.Extensions.Autofac.Microsoft.csproj" />
   </ItemGroup>
 
 </Project>
