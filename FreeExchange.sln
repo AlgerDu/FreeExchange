@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{5814
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.FreeExchange.Core", "Test.FreeExchange.Core\Test.FreeExchange.Core.csproj", "{DB050126-856B-4B06-9A64-A4960A15D3B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D.Extensions.Autofac.Microsoft", "Extensions\D.Extensions.Autofac.Microsoft\D.Extensions.Autofac.Microsoft.csproj", "{54E38C17-B30B-443B-AA97-BA64D1488A25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "D.Extensions.Autofac.Microsoft", "Extensions\D.Extensions.Autofac.Microsoft\D.Extensions.Autofac.Microsoft.csproj", "{54E38C17-B30B-443B-AA97-BA64D1488A25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
