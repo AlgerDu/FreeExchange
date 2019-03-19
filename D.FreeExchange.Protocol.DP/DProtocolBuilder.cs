@@ -47,7 +47,6 @@ namespace D.FreeExchange
                     _builderRunning = true;
 
                     Task.Run(() => DistributeIndexTask());
-                    Task.Run(() => SendTask());
                 }
 
                 return Result.CreateSuccess();
@@ -61,10 +60,8 @@ namespace D.FreeExchange
                 lock (this)
                 {
                     _builderRunning = false;
-
-                    _distributeMre.Set();
-                    _morePackagesMre.Set();
-                    _morePaksToSendMre.Set();
+                    
+                    _morePackagesToDistrubuteMre.Set();
                 }
 
                 return Result.CreateSuccess();
@@ -106,10 +103,8 @@ namespace D.FreeExchange
 
         int _maxSendIndex;
         int _currSendIndex;
-
-        ManualResetEvent _distributeMre;
-        ManualResetEvent _morePackagesMre;
-        ManualResetEvent _morePaksToSendMre;
+        
+        ManualResetEvent _morePackagesToDistrubuteMre;
 
         /// <summary>
         /// 等待分配 index 的 packages
@@ -120,7 +115,7 @@ namespace D.FreeExchange
         /// 已经分配好 index 等待发送的 packages
         /// </summary>
         Dictionary<int, Package> _toSendPackages;
-        Dictionary<int, int> _sentMark;
+        Dictionary<int, PackageState> _sentMark;
 
         /// <summary>
         /// 初始化 send 相关的一些数据
@@ -129,18 +124,17 @@ namespace D.FreeExchange
         {
             _toDistributeIndexPackages = new Queue<Package>(_options.MaxPackageBuffer);
             _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
-            _sentMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
-
-            _distributeMre = new ManualResetEvent(false);
-            _morePackagesMre = new ManualResetEvent(false);
-            _morePaksToSendMre = new ManualResetEvent(false);
+            _sentMark = new Dictionary<int, PackageState>(_options.MaxPackageBuffer * 4);
+            
+            _morePackagesToDistrubuteMre = new ManualResetEvent(false);
 
             _maxSendIndex = _options.MaxPackageBuffer;
             _currSendIndex = 0;
 
             for (var i = 0; i < _options.MaxPackageBuffer * 4; i++)
             {
-                _sentMark.Add(i, 0);
+                _sentMark.Add(i, PackageState.Empty);
+                _toSendPackages.Add(i, null);
             }
         }
 
@@ -164,7 +158,7 @@ namespace D.FreeExchange
                         _toDistributeIndexPackages.Enqueue(package);
                     }
 
-                    _morePackagesMre.Set();
+                    _morePackagesToDistrubuteMre.Set();
 
                     return Result.CreateSuccess();
                 }
@@ -175,9 +169,9 @@ namespace D.FreeExchange
         {
             while (_builderRunning)
             {
-                if (_currSendIndex == _maxSendIndex)
+                if (_currSendIndex % _options.MaxPackageBuffer == 0)
                 {
-                    _distributeMre.WaitOne();
+                    CleanAndRepeat().Wait();
                 }
 
                 Package toDistributeIndexPackage = null;
@@ -192,77 +186,97 @@ namespace D.FreeExchange
 
                 if (toDistributeIndexPackage == null)
                 {
-                    _morePackagesMre.WaitOne();
+                    _morePackagesToDistrubuteMre.WaitOne();
                 }
                 else
                 {
                     toDistributeIndexPackage.Index = _currSendIndex;
 
-                    lock (_sendLock)
-                    {
-                        _toSendPackages.Add(_currSendIndex, toDistributeIndexPackage);
-                        _sentMark[_currSendIndex] = 1;
-                        _currSendIndex++;
-                    }
+                    SendPackage(toDistributeIndexPackage);
 
-                    _morePaksToSendMre.Set();
+                    _currSendIndex = (_currSendIndex + 1) % _maxSendIndex;
                 }
             }
         }
 
-        private void SendTask()
+        private Task CleanAndRepeat()
         {
-            while (_builderRunning)
+            return Task.Run(() =>
             {
-                lock (_sendLock)
+                var cleanCount = 0;
+                do
                 {
-                    if (_currSendIndex == _maxSendIndex && _toSendPackages.Count == 0)
-                    {
-                        if (_maxSendIndex >= _options.MaxPackageBuffer * 4)
-                        {
-                            _maxSendIndex = _options.MaxPackageBuffer;
-                            _currSendIndex = 0;
-                        }
-                        else
-                        {
-                            _maxSendIndex += _options.MaxPackageBuffer;
-                        }
+                    var toCleanIndex = (_currSendIndex + cleanCount) % _maxSendIndex;
 
-                        _morePackagesMre.Set();
+                    _toSendPackages[toCleanIndex] = null;
+                    _sentMark[toCleanIndex] = PackageState.Empty;
+
+                    cleanCount++;
+                } while (cleanCount < _options.MaxPackageBuffer);
+
+                var repeatOffest = 0;
+                var repeatStart = (_currSendIndex + _options.MaxPackageBuffer) % _maxSendIndex;
+
+                do
+                {
+                    var toRepeatIndex = repeatStart + repeatOffest;
+                    var need = false;
+
+                    lock (_sendLock)
+                    {
+                        need = _sentMark[toRepeatIndex] != PackageState.Sended;
+                    }
+
+                    if (need)
+                    {
+                        SendPackage(toRepeatIndex);
+                    }
+
+                    repeatOffest++;
+
+                } while (repeatOffest < _options.MaxPackageBuffer * 2);
+            });
+        }
+
+        private Task SendPackage(Package package)
+        {
+            return Task.Run(() =>
+            {
+                if (_sendBufferAction != null)
+                {
+                    var buffer = package.ToBuffer();
+                    _sendBufferAction(buffer, 0, buffer.Length);
+
+                    lock (_sendLock)
+                    {
+                        _sentMark[package.Index] = PackageState.Sending;
                     }
                 }
-
-                IEnumerable<int> toSendPakIndexs;
-
-                lock (_toSendPackages)
-                {
-                    toSendPakIndexs = _sentMark.Keys.Where(kk => _sentMark[kk] == 1).ToArray();
-                }
-
-                if (toSendPakIndexs.Count() <= 0)
-                {
-                    _morePaksToSendMre.WaitOne();
-                }
-
-                foreach (var index in toSendPakIndexs)
+                else
                 {
                     lock (_sendLock)
                     {
-                        if (_toSendPackages.ContainsKey(index))
-                        {
-                            var pak = _toSendPackages[index];
-
-                            var buffer = pak.ToBuffer();
-
-                            //_sendBufferAction?.BeginInvoke(buffer, 0, buffer.Length, _sendBufferAction.EndInvoke, null);
-                            if (_sendBufferAction != null)
-                            {
-                                _sendBufferAction(buffer, 0, buffer.Length);
-                            }
-
-                            _sentMark[index] = 2;
-                        }
+                        _sentMark[package.Index] = PackageState.ToSend;
                     }
+                }
+            });
+        }
+
+        private void SendPackage(int index)
+        {
+            Package toSendPackage = null;
+
+            lock (_sendLock)
+            {
+                toSendPackage = _toSendPackages[index];
+            }
+
+            if (toSendPackage != null)
+            {
+                if (_sendBufferAction != null)
+                {
+                    var buffer = toSendPackage.ToBuffer();
+                    _sendBufferAction(buffer, 0, buffer.Length);
                 }
             }
         }
