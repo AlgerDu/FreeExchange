@@ -6,11 +6,14 @@ namespace D.FreeExchange
 {
     public enum PackageCode
     {
-        Heart = 0,
+        Connect = 0,
         Disconnect = 1,
-        Answer = 2,
-        Lost = 3,
-        Bad = 4,
+        Heart = 2,
+
+        DataStart = 4,
+        Answer = 5,
+        Lost = 6,
+        Bad = 7,
 
         Text = 8,
         ByteDescription = 9,

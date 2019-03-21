@@ -9,6 +9,7 @@ using D.Utils;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Linq;
+using Microsoft.Extensions.Options;
 
 namespace Test.DProtocolBuilder
 {
@@ -30,6 +31,8 @@ namespace Test.DProtocolBuilder
             _ptlBuilder.SetReceivedControlAction(ReveivedCtlAction);
             _ptlBuilder.SetReceivedPayloadAction(ReceivedPayloadAction);
             _ptlBuilder.SetSendBufferAction(MockSendBuffer);
+
+            _ptlBuilder.Run();
 
             _taskCaches = new Dictionary<Guid, TaskCompletionSource<IProtocolPayload>>();
         }
@@ -82,6 +85,22 @@ namespace Test.DProtocolBuilder
             var builder = new ContainerBuilder();
 
             builder.AddMicrosoftExtensions();
+
+            builder.RegisterType<D.FreeExchange.DProtocolBuilder>()
+                .As<IProtocolBuilder>()
+                .AsSelf();
+
+            var options = new DProtocolBuilderOptions
+            {
+                HeartInterval = 5,
+                MaxPackageBuffer = 2048,
+                MaxPayloadDataLength = 65536
+            };
+
+            builder.RegisterInstance<IOptions<DProtocolBuilderOptions>>(
+                Options.Create<DProtocolBuilderOptions>(options)
+                );
+
 
             return builder.Build();
         }

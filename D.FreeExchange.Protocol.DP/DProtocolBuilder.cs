@@ -60,7 +60,7 @@ namespace D.FreeExchange
                 lock (this)
                 {
                     _builderRunning = false;
-                    
+
                     _morePackagesToDistrubuteMre.Set();
                 }
 
@@ -103,7 +103,7 @@ namespace D.FreeExchange
 
         int _maxSendIndex;
         int _currSendIndex;
-        
+
         ManualResetEvent _morePackagesToDistrubuteMre;
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace D.FreeExchange
             _toDistributeIndexPackages = new Queue<Package>(_options.MaxPackageBuffer);
             _toSendPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
             _sentMark = new Dictionary<int, PackageState>(_options.MaxPackageBuffer * 4);
-            
+
             _morePackagesToDistrubuteMre = new ManualResetEvent(false);
 
             _maxSendIndex = _options.MaxPackageBuffer;
@@ -143,7 +143,15 @@ namespace D.FreeExchange
             List<Package> packages = new List<Package>();
 
             var textBuffer = _encoding.GetBytes(payload.Text);
-            BufferToPackage(packages, textBuffer, PackageCode.Text);
+            BufferToPackages(packages, textBuffer, PackageCode.Text);
+
+            var dataStart = new Package()
+            {
+                Fin = false,
+                Code = PackageCode.DataStart,
+                PayloadLength = packages.Count
+            };
+            packages.Insert(0, dataStart);
 
             lock (_sendLock)
             {
@@ -163,6 +171,32 @@ namespace D.FreeExchange
                     return Result.CreateSuccess();
                 }
             }
+        }
+
+        private void BufferToPackages(List<Package> packages, byte[] buffer, PackageCode code)
+        {
+            var offeset = 0;
+
+            do
+            {
+                var length = buffer.Length - offeset < _options.MaxPayloadDataLength
+                    ? buffer.Length - offeset
+                    : _options.MaxPayloadDataLength;
+
+                var package = new Package(length)
+                {
+                    Code = code
+                };
+
+                Array.Copy(buffer, offeset, package.Data, 0, length);
+
+                offeset += length;
+
+                if (offeset >= buffer.Length) package.Fin = true;
+                packages.Add(package);
+
+
+            } while (offeset < buffer.Length);
         }
 
         private void DistributeIndexTask()
@@ -224,7 +258,8 @@ namespace D.FreeExchange
 
                     lock (_sendLock)
                     {
-                        need = _sentMark[toRepeatIndex] != PackageState.Sended;
+                        need = _sentMark[toRepeatIndex] == PackageState.Sending
+                            || _sentMark[toRepeatIndex] == PackageState.ToSend;
                     }
 
                     if (need)
@@ -286,23 +321,22 @@ namespace D.FreeExchange
         #region 接收，和发送一样
 
         object _receiveLock = new object();
-        int _receiveMinIndex;
         int _receiveMaxIndex;
 
         Dictionary<int, Package> _toPackPackages;
-        Dictionary<int, int> _receiveMark;
+        Dictionary<int, PackageState> _receiveMark;
 
         private void InitReceive()
         {
             _toPackPackages = new Dictionary<int, Package>(_options.MaxPackageBuffer * 4);
-            _receiveMark = new Dictionary<int, int>(_options.MaxPackageBuffer * 4);
+            _receiveMark = new Dictionary<int, PackageState>(_options.MaxPackageBuffer * 4);
 
-            _receiveMaxIndex = 0;
-            _receiveMaxIndex = _options.MaxPackageBuffer;
+            _receiveMaxIndex = _options.MaxPackageBuffer * 4;
 
             for (var i = 0; i < _options.MaxPackageBuffer * 4; i++)
             {
-                _receiveMark.Add(i, 0);
+                _receiveMark.Add(i, PackageState.Empty);
+                _toPackPackages.Add(i, null);
             }
         }
 
@@ -314,7 +348,7 @@ namespace D.FreeExchange
 
             if (need > 0)
             {
-                _logger.LogError($"HACK 出现了 udp 数据没有完整接收到的问题");
+                _logger.LogError($"HACK 出现了 package 数据没有完整接收到的问题");
                 return;
             }
 
@@ -329,6 +363,7 @@ namespace D.FreeExchange
                     DealAnswer(pakage);
                     break;
 
+                case PackageCode.DataStart:
                 case PackageCode.Text:
                 case PackageCode.ByteDescription:
                 case PackageCode.Byte:
@@ -342,9 +377,9 @@ namespace D.FreeExchange
 
         private void DealHeart(Package package)
         {
-            var buffer = package.ToBuffer();
             if (_sendBufferAction != null)
             {
+                var buffer = package.ToBuffer();
                 _sendBufferAction(buffer, 0, buffer.Length);
             }
         }
@@ -355,7 +390,8 @@ namespace D.FreeExchange
             {
                 if (_toSendPackages.ContainsKey(package.Index))
                 {
-                    _toSendPackages.Remove(package.Index);
+                    _toSendPackages[package.Index] = null;
+                    _sentMark[package.Index] = PackageState.Sended;
                 }
             }
         }
@@ -364,58 +400,40 @@ namespace D.FreeExchange
         {
             var pakIndex = package.Index;
 
-            if (pakIndex >= _receiveMaxIndex
-             && pakIndex < _receiveMaxIndex + _options.MaxPackageBuffer)
+            SendAnswerPak(pakIndex);
+
+            lock (_receiveLock)
             {
-                lock (_receiveLock)
+                if (_receiveMark[pakIndex] != PackageState.Empty)
                 {
-                    _receiveMinIndex = _receiveMaxIndex;
-                    _receiveMaxIndex += _options.MaxPackageBuffer;
-
-                    for (var key = _receiveMinIndex; key < _receiveMaxIndex; key++)
-                    {
-                        _receiveMark[key] = 0;
-
-                        if (_toPackPackages.ContainsKey(key))
-                        {
-                            _toPackPackages.Remove(key);
-                        }
-                    }
+                    // 收到了重复的数据包，不做处理
+                    return;
                 }
             }
-            else if (pakIndex < _options.MaxPackageBuffer
-                     && _receiveMaxIndex == _options.MaxPackageBuffer * 4)
+
+            if (pakIndex % _receiveMaxIndex == 0)
             {
-                lock (_receiveLock)
+                var cleanCount = 0;
+                do
                 {
-                    _receiveMinIndex = 0;
-                    _receiveMaxIndex = _options.MaxPackageBuffer;
+                    var toCleanIndex = pakIndex + cleanCount;
+                    cleanCount++;
 
-                    for (var key = _receiveMinIndex; key < _receiveMaxIndex; key++)
-                    {
-                        _receiveMark[key] = 0;
+                    _receiveMark[toCleanIndex] = PackageState.Empty;
+                    _toPackPackages[toCleanIndex] = null;
 
-                        if (_toPackPackages.ContainsKey(key))
-                        {
-                            _toPackPackages.Remove(key);
-                        }
-                    }
-                }
+                } while (cleanCount < _options.MaxPackageBuffer);
             }
 
             lock (_receiveLock)
             {
-                if (_receiveMark[pakIndex] == 0)
-                {
-                    _toPackPackages.Add(pakIndex, package);
+                _receiveMark[pakIndex] = PackageState.ToPackage;
+                _toPackPackages[pakIndex] = package;
+            }
 
-                    SendAnswerPak(pakIndex);
-
-                    if (package.Fin)
-                    {
-                        Task.Run(() => TryPackPackageTask(pakIndex));
-                    }
-                }
+            if (package.Fin)
+            {
+                TryPackPackageTask(pakIndex);
             }
         }
 
@@ -430,110 +448,84 @@ namespace D.FreeExchange
 
                 var buffer = pak.ToBuffer();
 
-                _sendBufferAction?.Invoke(buffer, 0, buffer.Length);
+                _sendBufferAction(buffer, 0, buffer.Length);
             });
         }
 
-        private void TryPackPackageTask(int finIndex)
+        private Task TryPackPackageTask(int finIndex)
         {
-            var can = false;
-            var offset = finIndex - 1;
-
-            while (true)
+            return Task.Run(() =>
             {
-                var mark = _receiveMark[offset];
-                if (mark == 0)
-                {
-                    break;
-                }
-                else if (mark == 2)
-                {
-                    can = true;
-                    break;
-                }
-                else
-                {
-                    offset--;
-                    if (offset == 0) offset = _options.MaxPackageBuffer * 4 - 1;
-                }
-            }
+                var can = false;
+                var startIndx = finIndex - 1;
 
-            if (can)
-            {
-                List<Package> tmpPackages = new List<Package>();
+                var goon = true;
 
-                lock (_receiveLock)
+                do
                 {
-                    while (offset != finIndex)
+                    if (_receiveMark[startIndx] == PackageState.Empty)
                     {
-                        offset += 1;
-
-                        if (offset == _options.MaxPackageBuffer * 4) offset = 0;
-
-                        tmpPackages.Add(_toPackPackages[offset]);
-                        _toPackPackages.Remove(offset);
+                        goon = false;
                     }
-                }
-
-                var code = PackageCode.Text;
-                List<byte> buffer = new List<byte>();
-                var payload = new ProtocolPayload();
-
-                foreach (var package in tmpPackages)
-                {
-                    if (code == package.Code)
+                    else if (_toPackPackages[startIndx].Code == PackageCode.DataStart)
                     {
-                        buffer.AddRange(package.Data);
+                        goon = false;
+                        can = true;
                     }
                     else
                     {
-                        PackBufferToPayload(buffer.ToArray(), code, payload);
-
-                        buffer.Clear();
-                        code = package.Code;
+                        startIndx = (startIndx + _receiveMaxIndex - 1) % _receiveMaxIndex;
                     }
+                } while (goon);
+
+                if (can)
+                {
+                    PackToPayloadAndDeal(startIndx);
                 }
-
-                PackBufferToPayload(buffer.ToArray(), code, payload);
-
-                _receivedPayloadAction?.Invoke(payload);
-            }
+            });
         }
 
-        private void PackBufferToPayload(byte[] buffer, PackageCode code, ProtocolPayload payload)
+        private void PackToPayloadAndDeal(int index)
         {
-            if (code == PackageCode.Text)
-            {
-                payload.Text = _encoding.GetString(buffer.ToArray());
-            }
-        }
+            Package pak = _toPackPackages[index];
 
-        #endregion
+            var dataPakCount = pak.PayloadLength;
+            var pakedCount = 0;
+            var buffer = new List<byte>();
 
-        private void BufferToPackage(List<Package> packages, byte[] buffer, PackageCode code)
-        {
-            var offeset = 0;
+            var lastPakCode = PackageCode.Text;
+
+            var payload = new ProtocolPayload();
 
             do
             {
-                var length = buffer.Length - offeset < _options.MaxPayloadDataLength
-                    ? buffer.Length - offeset
-                    : _options.MaxPayloadDataLength;
+                index = (index + 1) % _receiveMaxIndex;
+                pak = _toPackPackages[index];
 
-                var package = new Package(length)
+                if (pak.Code == lastPakCode)
                 {
-                    Code = code
-                };
+                    buffer.AddRange(pak.Data);
+                }
 
-                Array.Copy(buffer, offeset, package.Data, 0, length);
+                if (pak.Fin || pak.Code != lastPakCode)
+                {
+                    switch (lastPakCode)
+                    {
+                        case PackageCode.Text:
+                            {
+                                payload.Text = _encoding.GetString(buffer.ToArray());
+                            }
+                            break;
+                    }
+                }
 
-                offeset += length;
+                lastPakCode = pak.Code;
+            }
+            while (!pak.Fin);
 
-                if (offeset >= buffer.Length) package.Fin = true;
-                packages.Add(package);
-
-
-            } while (offeset < buffer.Length);
+            _receivedPayloadAction(payload);
         }
+
+        #endregion
     }
 }
