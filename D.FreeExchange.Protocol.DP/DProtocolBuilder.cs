@@ -105,6 +105,7 @@ namespace D.FreeExchange
         int _currSendIndex;
 
         ManualResetEvent _morePackagesToDistrubuteMre;
+        ManualResetEvent _continueSendingMre;
 
         /// <summary>
         /// 等待分配 index 的 packages
@@ -127,6 +128,7 @@ namespace D.FreeExchange
             _sentMark = new Dictionary<int, PackageState>(_options.MaxPackageBuffer * 4);
 
             _morePackagesToDistrubuteMre = new ManualResetEvent(false);
+            _continueSendingMre = new ManualResetEvent(false);
 
             _maxSendIndex = _options.MaxPackageBuffer;
             _currSendIndex = 0;
@@ -145,13 +147,8 @@ namespace D.FreeExchange
             var textBuffer = _encoding.GetBytes(payload.Text);
             BufferToPackages(packages, textBuffer, PackageCode.Text);
 
-            var dataStart = new Package()
-            {
-                Fin = false,
-                Code = PackageCode.DataStart,
-                PayloadLength = packages.Count
-            };
-            packages.Insert(0, dataStart);
+            packages[0].Flag = FlagCode.Start;
+            packages[packages.Count - 1].Flag = FlagCode.End;
 
             lock (_sendLock)
             {
@@ -192,9 +189,7 @@ namespace D.FreeExchange
 
                 offeset += length;
 
-                if (offeset >= buffer.Length) package.Fin = true;
                 packages.Add(package);
-
 
             } while (offeset < buffer.Length);
         }
@@ -203,11 +198,6 @@ namespace D.FreeExchange
         {
             while (_builderRunning)
             {
-                if (_currSendIndex % _options.MaxPackageBuffer == 0)
-                {
-                    CleanAndRepeat().Wait();
-                }
-
                 Package toDistributeIndexPackage = null;
 
                 lock (_sendLock)
@@ -230,6 +220,13 @@ namespace D.FreeExchange
 
                     _currSendIndex = (_currSendIndex + 1) % _maxSendIndex;
                 }
+
+                if ((_currSendIndex + 1) % _options.MaxPackageBuffer == 0)
+                {
+                    CleanAndRepeat();
+
+                    _continueSendingMre.WaitOne();
+                }
             }
         }
 
@@ -238,13 +235,14 @@ namespace D.FreeExchange
             return Task.Run(() =>
             {
                 var cleanCount = 0;
+                var toCleanIndex = (_currSendIndex + 1) % _maxSendIndex;
+                SendCleanPak(toCleanIndex);
                 do
                 {
-                    var toCleanIndex = (_currSendIndex + cleanCount) % _maxSendIndex;
-
                     _toSendPackages[toCleanIndex] = null;
                     _sentMark[toCleanIndex] = PackageState.Empty;
 
+                    toCleanIndex = (toCleanIndex + 1) % _maxSendIndex;
                     cleanCount++;
                 } while (cleanCount < _options.MaxPackageBuffer);
 
@@ -316,6 +314,46 @@ namespace D.FreeExchange
             }
         }
 
+        private Task SendCleanPak(int index)
+        {
+            return Task.Run(() =>
+            {
+                var pak = new Package
+                {
+                    Flag = FlagCode.End,
+                    Code = PackageCode.Clean,
+                    Index = index
+                };
+
+                if (_sendBufferAction != null)
+                {
+                    var buffer = pak.ToBuffer();
+
+                    _sendBufferAction(buffer, 0, buffer.Length);
+                }
+            });
+        }
+
+        private Task SendCleanUpPak(int index)
+        {
+            return Task.Run(() =>
+            {
+                var pak = new Package
+                {
+                    Flag = FlagCode.End,
+                    Code = PackageCode.CleanUp,
+                    Index = index
+                };
+
+                if (_sendBufferAction != null)
+                {
+                    var buffer = pak.ToBuffer();
+
+                    _sendBufferAction(buffer, 0, buffer.Length);
+                }
+            });
+        }
+
         #endregion
 
         #region 接收，和发送一样
@@ -354,25 +392,31 @@ namespace D.FreeExchange
 
             _logger.LogTrace($"接收到 {pakage}");
 
-            switch (pakage.Code)
+            Task.Run(() =>
             {
-                case PackageCode.Heart:
-                    DealHeart(pakage);
-                    break;
-                case PackageCode.Answer:
-                    DealAnswer(pakage);
-                    break;
+                switch (pakage.Code)
+                {
+                    case PackageCode.Heart:
+                        DealHeart(pakage);
+                        break;
+                    case PackageCode.Answer:
+                        DealAnswer(pakage);
+                        break;
 
-                case PackageCode.DataStart:
-                case PackageCode.Text:
-                case PackageCode.ByteDescription:
-                case PackageCode.Byte:
-                    DealDataPak(pakage);
-                    break;
-                default:
-                    _logger.LogWarning($"尚未处理 Package.Code = {pakage.Code} 类型的 package");
-                    break;
-            }
+                    case PackageCode.CleanUp:
+                        DealClean(pakage);
+                        break;
+
+                    case PackageCode.Text:
+                    case PackageCode.ByteDescription:
+                    case PackageCode.Byte:
+                        DealDataPak(pakage);
+                        break;
+                    default:
+                        _logger.LogWarning($"尚未处理 Package.Code = {pakage.Code} 类型的 package");
+                        break;
+                }
+            });
         }
 
         private void DealHeart(Package package)
@@ -396,6 +440,32 @@ namespace D.FreeExchange
             }
         }
 
+        private void DealClean(Package package)
+        {
+            lock (_receiveLock)
+            {
+                var toClendStartIndex = package.Index;
+
+                var cleanCount = 0;
+                do
+                {
+                    var toCleanIndex = toClendStartIndex + cleanCount;
+                    cleanCount++;
+
+                    _receiveMark[toCleanIndex] = PackageState.Empty;
+                    _toPackPackages[toCleanIndex] = null;
+
+                } while (cleanCount < _options.MaxPackageBuffer);
+
+                SendCleanUpPak(package.Index);
+            }
+        }
+
+        private void DealCleanUp(Package package)
+        {
+            _continueSendingMre.Set();
+        }
+
         private void DealDataPak(Package package)
         {
             var pakIndex = package.Index;
@@ -411,27 +481,13 @@ namespace D.FreeExchange
                 }
             }
 
-            if (pakIndex % _receiveMaxIndex == 0)
-            {
-                var cleanCount = 0;
-                do
-                {
-                    var toCleanIndex = pakIndex + cleanCount;
-                    cleanCount++;
-
-                    _receiveMark[toCleanIndex] = PackageState.Empty;
-                    _toPackPackages[toCleanIndex] = null;
-
-                } while (cleanCount < _options.MaxPackageBuffer);
-            }
-
             lock (_receiveLock)
             {
                 _receiveMark[pakIndex] = PackageState.ToPackage;
                 _toPackPackages[pakIndex] = package;
             }
 
-            if (package.Fin)
+            if (package.Flag == FlagCode.End)
             {
                 TryPackPackageTask(pakIndex);
             }
@@ -442,7 +498,7 @@ namespace D.FreeExchange
             return Task.Run(() =>
             {
                 var pak = new Package();
-                pak.Fin = true;
+                pak.Flag = FlagCode.End;
                 pak.Code = PackageCode.Answer;
                 pak.Index = index;
 
@@ -467,7 +523,7 @@ namespace D.FreeExchange
                     {
                         goon = false;
                     }
-                    else if (_toPackPackages[startIndx].Code == PackageCode.DataStart)
+                    else if (_toPackPackages[startIndx].Flag == FlagCode.Start)
                     {
                         goon = false;
                         can = true;
@@ -490,7 +546,6 @@ namespace D.FreeExchange
             Package pak = _toPackPackages[index];
 
             var dataPakCount = pak.PayloadLength;
-            var pakedCount = 0;
             var buffer = new List<byte>();
 
             var lastPakCode = PackageCode.Text;
@@ -507,7 +562,7 @@ namespace D.FreeExchange
                     buffer.AddRange(pak.Data);
                 }
 
-                if (pak.Fin || pak.Code != lastPakCode)
+                if (pak.Flag == FlagCode.End || pak.Code != lastPakCode)
                 {
                     switch (lastPakCode)
                     {
@@ -521,7 +576,7 @@ namespace D.FreeExchange
 
                 lastPakCode = pak.Code;
             }
-            while (!pak.Fin);
+            while (pak.Flag != FlagCode.End);
 
             _receivedPayloadAction(payload);
         }

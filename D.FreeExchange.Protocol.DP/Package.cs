@@ -22,8 +22,6 @@ namespace D.FreeExchange
         Answer,
         Lost,
 
-        DataStart = 8,
-
         Text = 12,
         ByteDescription,
         Byte
