@@ -4,20 +4,29 @@ using System.Text;
 
 namespace D.FreeExchange
 {
+    public enum FlagCode
+    {
+        Start,
+        Middle,
+        End
+    }
+
     public enum PackageCode
     {
         Connect = 0,
-        Disconnect = 1,
-        Heart = 2,
+        Disconnect,
+        Heart,
 
-        DataStart = 4,
-        Answer = 5,
-        Lost = 6,
-        Bad = 7,
+        Clean = 4,
+        CleanUp,
+        Answer,
+        Lost,
 
-        Text = 8,
-        ByteDescription = 9,
-        Byte = 10
+        DataStart = 8,
+
+        Text = 12,
+        ByteDescription,
+        Byte
     }
 
     public class Package
@@ -25,19 +34,65 @@ namespace D.FreeExchange
         /// <summary>
         /// 已经解析的数据长度
         /// </summary>
-        private int _analysedBufferLength;
+        int _analysedBufferLength;
+
+        /// <summary>
+        /// 包的总长度
+        /// </summary>
+        int _bufferLength { get; set; }
+
+        PackageCode _pakCode;
+        int _payloadLength;
 
         #region 协议包的内容
         /// <summary>
         /// 是否结束包
         /// </summary>
-        public bool Fin { get; set; }
+        public FlagCode Flag { get; set; }
 
-        public PackageCode Code { get; set; }
+        public PackageCode Code
+        {
+            get => _pakCode;
+            set
+            {
+                _pakCode = value;
+
+                switch (_pakCode)
+                {
+                    case PackageCode.Connect:
+                    case PackageCode.Disconnect:
+                    case PackageCode.Heart:
+                        _bufferLength = 1;
+                        break;
+
+                    case PackageCode.Clean:
+                    case PackageCode.CleanUp:
+                    case PackageCode.Lost:
+                    case PackageCode.Answer:
+                        _bufferLength = 3;
+                        break;
+
+                    case PackageCode.Text:
+                    case PackageCode.ByteDescription:
+                    case PackageCode.Byte:
+                        _bufferLength = 5 + _payloadLength;
+                        break;
+                }
+            }
+        }
 
         public int Index { get; set; }
 
-        public int PayloadLength { get; set; }
+        public int PayloadLength
+        {
+            get => _payloadLength;
+            set
+            {
+                _payloadLength = value;
+
+                _bufferLength = 5 + _payloadLength;
+            }
+        }
 
         public byte[] Data { get; set; }
         #endregion
@@ -49,7 +104,7 @@ namespace D.FreeExchange
 
         public Package(int payloadLength)
         {
-            Fin = false;
+            Flag = FlagCode.Middle;
 
             PayloadLength = payloadLength;
             Data = new byte[PayloadLength];
@@ -64,108 +119,108 @@ namespace D.FreeExchange
         /// <returns>还需要多少长度组成一个完整的包</returns>
         public int PushBuffer(byte[] buffer, ref int index, int length)
         {
-            var offset = index;
+            var endIndex = index + length < buffer.Length ? index + length : buffer.Length;
 
-            if (offset - index < length
-                && _analysedBufferLength == 0)
+            if (_analysedBufferLength == 0)
             {
-                Fin = (buffer[offset] & 128) > 0;
-                Code = (PackageCode)(buffer[offset] & 15);
+                Flag = (FlagCode)(buffer[index] >> 6);
+                Code = (PackageCode)(buffer[index] & 15);
 
-                offset++;
+                index++;
                 _analysedBufferLength++;
             }
 
-            if (offset - index < length
-                && _analysedBufferLength == 1)
+            if (index >= endIndex)
             {
-                Index = buffer[offset] << 8;
+                return _bufferLength - _analysedBufferLength;
+            }
 
-                offset++;
+            if (_analysedBufferLength == 1)
+            {
+                Index = buffer[index] << 8;
+
+                index++;
                 _analysedBufferLength++;
             }
 
-            if (offset - index < length
-                && _analysedBufferLength == 2)
+            if (index >= endIndex)
             {
-                Index += buffer[offset];
+                return _bufferLength - _analysedBufferLength;
+            }
 
-                offset++;
+            if (_analysedBufferLength == 2)
+            {
+                Index += buffer[index];
+
+                index++;
                 _analysedBufferLength++;
             }
 
-            if (offset - index < length
-                && (int)Code >= 8
+            if (index >= endIndex)
+            {
+                return _bufferLength - _analysedBufferLength;
+            }
+
+            if (Code >= PackageCode.Text
                 && _analysedBufferLength == 3)
             {
-                PayloadLength = buffer[offset] << 8;
+                PayloadLength = buffer[index] << 8;
 
-                offset++;
+                index++;
                 _analysedBufferLength++;
             }
 
-            if (offset - index < length
-                && (int)Code >= 8
+            if (index >= endIndex)
+            {
+                return _bufferLength - _analysedBufferLength;
+            }
+
+            if (Code >= PackageCode.Text
                 && _analysedBufferLength == 4)
             {
-                PayloadLength += buffer[offset];
+                PayloadLength += buffer[index];
                 Data = new byte[PayloadLength];
 
-                offset++;
+                index++;
                 _analysedBufferLength++;
             }
 
-            if (offset - index < length
-                && (int)Code >= 8
-                && _analysedBufferLength - 5 < PayloadLength)
+            if (index >= endIndex)
             {
-                var need = PayloadLength + 5 - _analysedBufferLength;
+                return _bufferLength - _analysedBufferLength;
+            }
 
+            var need = _bufferLength - _analysedBufferLength;
+
+            if (need > 0)
+            {
                 var enableLength =
-                    buffer.Length - offset < need
-                    ? buffer.Length - offset
+                    endIndex - index < need
+                    ? endIndex - index
                     : need;
-                Array.Copy(buffer, offset, Data, _analysedBufferLength - 5, enableLength);
+                Array.Copy(buffer, index, Data, _analysedBufferLength - 5, enableLength);
 
-                offset += enableLength;
+                index += enableLength;
                 _analysedBufferLength += enableLength;
             }
 
-            index = offset;
-
-            if ((int)Code < 8)
-            {
-                return 3 - _analysedBufferLength;
-            }
-            else if (_analysedBufferLength < 5)
-            {
-                return 5 - _analysedBufferLength;
-            }
-            else
-            {
-                return PayloadLength - _analysedBufferLength + 5;
-            }
+            return _bufferLength - _analysedBufferLength;
         }
 
         public byte[] ToBuffer()
         {
-            byte[] buffer = null;
-            if ((int)Code < 8)
-            {
-                buffer = new byte[3];
-            }
-            else
-            {
-                buffer = new byte[5 + PayloadLength];
-            }
+            var buffer = new byte[_bufferLength];
 
-            buffer[0] = (byte)((Fin ? 1 : 0) << 7);
+            buffer[0] = (byte)((byte)Flag << 6);
             buffer[0] = (byte)(buffer[0] + (byte)Code);
 
-            buffer[1] = (byte)(Index >> 8);
-            buffer[2] = (byte)(Index);
+            if (Code >= PackageCode.Clean)
+            {
+                buffer[1] = (byte)(Index >> 8);
+                buffer[2] = (byte)(Index);
+            }
 
-            if ((int)Code >= 8)
+            if (Code >= PackageCode.Text)
             {
                 buffer[3] = (byte)(PayloadLength >> 8);
                 buffer[4] = (byte)(PayloadLength);
@@ -178,7 +233,7 @@ namespace D.FreeExchange
 
         public override string ToString()
         {
-            return $"Package[{Fin},{Code},{Index},{PayloadLength}]";
+            return $"Package[{Flag},{Code},{Index},{PayloadLength}]";
         }
     }
 }
