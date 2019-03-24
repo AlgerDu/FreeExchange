@@ -19,11 +19,19 @@ namespace Test.DProtocolBuilder
         readonly IContainer _container;
 
         IProtocolBuilder _ptlBuilder;
+        DProtocolBuilderOptions _options;
 
-        Dictionary<Guid, TaskCompletionSource<IProtocolPayload>> _taskCaches;
+        Dictionary<Guid, TaskCompletionSource<IResult<IProtocolPayload>>> _taskCaches;
 
         public Test_DP()
         {
+            _options = new DProtocolBuilderOptions
+            {
+                HeartInterval = 5,
+                MaxPackageBuffer = 4,
+                MaxPayloadDataLength = 32
+            };
+
             _container = CreateContainer();
 
             _ptlBuilder = _container.Resolve<IProtocolBuilder>();
@@ -34,7 +42,7 @@ namespace Test.DProtocolBuilder
 
             _ptlBuilder.Run();
 
-            _taskCaches = new Dictionary<Guid, TaskCompletionSource<IProtocolPayload>>();
+            _taskCaches = new Dictionary<Guid, TaskCompletionSource<IResult<IProtocolPayload>>>();
         }
 
         [TestMethod]
@@ -45,19 +53,47 @@ namespace Test.DProtocolBuilder
                 Uid = Guid.NewGuid()
             };
 
-            var payload = SenAndReceive(model);
+            var rst = SenAndReceive(model);
+            var payload = rst.Data;
 
             Assert.AreEqual(payload.Text, JsonConvert.SerializeObject(model));
             Assert.AreEqual(payload.Bytes.Count(), 0);
         }
 
-        private IProtocolPayload SenAndReceive<T>(
+        /// <summary>
+        /// 发送的数据超过了发送缓存区
+        /// </summary>
+        [TestMethod]
+        public void TestDataExceedSendBuffer()
+        {
+            // DProtocolBuilderOptions.MaxPackageBuffer * MaxPayloadDataLength
+
+            var model = new TxtPayload
+            {
+                Uid = Guid.NewGuid()
+            };
+
+            for (var i = 0; i < _options.MaxPackageBuffer; i++)
+            {
+                for (var j = 0; j < _options.MaxPayloadDataLength; j++)
+                {
+                    model.Txt += "a";
+                }
+            }
+
+            var rst = SenAndReceive(model);
+
+            Assert.AreEqual(rst.IsSuccess(), false);
+            Assert.AreEqual(rst.Code, (int)ExchangeCode.SentBufferFull);
+        }
+
+        private IResult<IProtocolPayload> SenAndReceive<T>(
             T dataWithUid
             , params IByteDescription[] bytes
             )
             where T : IPayloadUid
         {
-            var tcs = new TaskCompletionSource<IProtocolPayload>();
+            var tcs = new TaskCompletionSource<IResult<IProtocolPayload>>();
 
             lock (_taskCaches)
             {
@@ -71,7 +107,15 @@ namespace Test.DProtocolBuilder
                         Bytes = bytes
                     };
 
-                    _ptlBuilder.PushPayload(payload);
+                    var task = _ptlBuilder.PushPayload(payload);
+                    task.Wait();
+
+                    var rst = task.Result;
+
+                    if (!rst.IsSuccess())
+                    {
+                        tcs.SetResult(Result.Create<IProtocolPayload>(rst.Code, null, rst.Msg));
+                    }
                 });
             }
 
@@ -90,15 +134,8 @@ namespace Test.DProtocolBuilder
                 .As<IProtocolBuilder>()
                 .AsSelf();
 
-            var options = new DProtocolBuilderOptions
-            {
-                HeartInterval = 5,
-                MaxPackageBuffer = 2048,
-                MaxPayloadDataLength = 65536
-            };
-
             builder.RegisterInstance<IOptions<DProtocolBuilderOptions>>(
-                Options.Create<DProtocolBuilderOptions>(options)
+                Options.Create<DProtocolBuilderOptions>(_options)
                 );
 
 
@@ -117,7 +154,7 @@ namespace Test.DProtocolBuilder
             {
                 if (_taskCaches.ContainsKey(shell.Uid))
                 {
-                    _taskCaches[shell.Uid].SetResult(payload);
+                    _taskCaches[shell.Uid].SetResult(Result.CreateSuccess(payload));
                 }
             }
         }
@@ -136,5 +173,12 @@ namespace Test.DProtocolBuilder
     internal class PayloadUid : IPayloadUid
     {
         public Guid Uid { get; set; }
+    }
+
+    internal class TxtPayload :
+        PayloadUid,
+        IPayloadUid
+    {
+        public string Txt { get; set; }
     }
 }

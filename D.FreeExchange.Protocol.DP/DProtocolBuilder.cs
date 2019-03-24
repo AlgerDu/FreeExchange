@@ -161,7 +161,7 @@ namespace D.FreeExchange
             {
                 if (_toDistributeIndexPackages.Count + packages.Count > _options.MaxPackageBuffer)
                 {
-                    return Result.CreateError("缓存已满");
+                    return Result.Create((int)ExchangeCode.SentBufferFull, "缓存已满");
                 }
                 else
                 {
