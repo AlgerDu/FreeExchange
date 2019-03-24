@@ -147,8 +147,15 @@ namespace D.FreeExchange
             var textBuffer = _encoding.GetBytes(payload.Text);
             BufferToPackages(packages, textBuffer, PackageCode.Text);
 
-            packages[0].Flag = FlagCode.Start;
-            packages[packages.Count - 1].Flag = FlagCode.End;
+            if (packages.Count == 1)
+            {
+                packages[0].Flag = FlagCode.Single;
+            }
+            else
+            {
+                packages[0].Flag = FlagCode.Start;
+                packages[packages.Count - 1].Flag = FlagCode.End;
+            }
 
             lock (_sendLock)
             {
@@ -236,7 +243,9 @@ namespace D.FreeExchange
             {
                 var cleanCount = 0;
                 var toCleanIndex = (_currSendIndex + 1) % _maxSendIndex;
+
                 SendCleanPak(toCleanIndex);
+
                 do
                 {
                     _toSendPackages[toCleanIndex] = null;
@@ -318,6 +327,8 @@ namespace D.FreeExchange
         {
             return Task.Run(() =>
             {
+                //TODO 添加一个 timer
+
                 var pak = new Package
                 {
                     Flag = FlagCode.End,
@@ -487,7 +498,7 @@ namespace D.FreeExchange
                 _toPackPackages[pakIndex] = package;
             }
 
-            if (package.Flag == FlagCode.End)
+            if (package.Flag == FlagCode.End || package.Flag == FlagCode.Single)
             {
                 TryPackPackageTask(pakIndex);
             }
@@ -512,8 +523,14 @@ namespace D.FreeExchange
         {
             return Task.Run(() =>
             {
+                if (_toPackPackages[finIndex].Flag == FlagCode.Single)
+                {
+                    PackToPayloadAndDeal(finIndex);
+                    return;
+                }
+
                 var can = false;
-                var startIndx = finIndex - 1;
+                var startIndx = (finIndex + _receiveMaxIndex - 1) % _receiveMaxIndex;
 
                 var goon = true;
 
@@ -550,11 +567,13 @@ namespace D.FreeExchange
 
             var lastPakCode = PackageCode.Text;
 
-            var payload = new ProtocolPayload();
+            var payload = new ProtocolPayload()
+            {
+                Bytes = new ByteDescription[0]
+            };
 
             do
             {
-                index = (index + 1) % _receiveMaxIndex;
                 pak = _toPackPackages[index];
 
                 if (pak.Code == lastPakCode)
@@ -562,7 +581,9 @@ namespace D.FreeExchange
                     buffer.AddRange(pak.Data);
                 }
 
-                if (pak.Flag == FlagCode.End || pak.Code != lastPakCode)
+                if (pak.Flag == FlagCode.End
+                    || pak.Flag == FlagCode.Single
+                    || pak.Code != lastPakCode)
                 {
                     switch (lastPakCode)
                     {
@@ -575,8 +596,9 @@ namespace D.FreeExchange
                 }
 
                 lastPakCode = pak.Code;
+                index = (index + 1) % _receiveMaxIndex;
             }
-            while (pak.Flag != FlagCode.End);
+            while (pak.Flag != FlagCode.End && pak.Flag != FlagCode.Single);
 
             _receivedPayloadAction(payload);
         }

@@ -8,7 +8,8 @@ namespace D.FreeExchange
     {
         Start,
         Middle,
-        End
+        End,
+        Single
     }
 
     public enum PackageCode
@@ -223,7 +224,7 @@ namespace D.FreeExchange
                 buffer[3] = (byte)(PayloadLength >> 8);
                 buffer[4] = (byte)(PayloadLength);
 
-                Array.Copy(buffer, 5, Data, 0, PayloadLength);
+                Array.Copy(Data, 0, buffer, 5, PayloadLength);
             }
 
             return buffer;
