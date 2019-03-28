@@ -38,7 +38,7 @@ namespace D.FreeExchange
         }
 
         #region IProtocolBuilder 实现
-        public Task<IResult> Run()
+        public Task<IResult> Run(ProtocolBuilderRunningMode mode)
         {
             return Task.Run<IResult>(() =>
             {

@@ -19,6 +19,22 @@ namespace D.FreeExchange
     }
 
     /// <summary>
+    /// IProtocolBuilder 的运行模式
+    /// </summary>
+    public enum ProtocolBuilderRunningMode
+    {
+        /// <summary>
+        /// 此模式下，大部分动作都是主动的，如心跳
+        /// </summary>
+        Client,
+
+        /// <summary>
+        /// 此模式下，大部分动作都是被动的
+        /// </summary>
+        Server
+    }
+
+    /// <summary>
     /// 交换码
     /// </summary>
     public enum ExchangeCode

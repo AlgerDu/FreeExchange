@@ -11,7 +11,12 @@ namespace D.FreeExchange
     /// </summary>
     public interface IProtocolBuilder
     {
-        Task<IResult> Run();
+        /// <summary>
+        /// 启动运行
+        /// </summary>
+        /// <param name="mode">以那种模式运行</param>
+        /// <returns></returns>
+        Task<IResult> Run(ProtocolBuilderRunningMode mode);
 
         Task<IResult> Stop();
 
