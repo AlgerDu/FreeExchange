@@ -161,6 +161,7 @@ namespace Test.DProtocolBuilder
 
         private void MockSendBuffer(byte[] buffer, int offset, int length)
         {
+            // TODO 这里可以模拟下丢包的情况
             _ptlBuilder.PushBuffer(buffer, offset, length);
         }
     }

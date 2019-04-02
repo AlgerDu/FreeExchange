@@ -28,6 +28,53 @@ namespace D.FreeExchange
         Byte
     }
 
+    public interface IPackage
+    {
+        FlagCode Flag { get; set; }
+
+        PackageCode Code { get; set; }
+
+        int PushBuffer(byte[] buffer, ref int index, int length);
+
+        byte[] ToBuffer();
+    }
+
+    public class PackageHeader : IPackage
+    {
+        public byte HeadBuffer { get; set; }
+
+        public FlagCode Flag { get; set; }
+
+        public PackageCode Code { get; set; }
+
+        public PackageHeader(byte buffer)
+        {
+            HeadBuffer = buffer;
+
+            Flag = (FlagCode)(buffer >> 6);
+            Code = (PackageCode)(buffer & 15);
+        }
+
+        public PackageHeader(IPackage package)
+        {
+            Flag = package.Flag;
+            Code = package.Code;
+
+            HeadBuffer = (byte)((byte)Flag << 6);
+            HeadBuffer = (byte)(HeadBuffer + (byte)Code);
+        }
+
+        public virtual int PushBuffer(byte[] buffer, ref int index, int length)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual byte[] ToBuffer()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class Package
     {
         /// <summary>

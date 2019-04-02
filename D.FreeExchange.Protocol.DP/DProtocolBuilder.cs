@@ -18,9 +18,15 @@ namespace D.FreeExchange
         DProtocolBuilderOptions _options;
         bool _builderRunning;
 
+        string _instanceID;
+        ProtocolBuilderRunningMode _runningMode;
+
         Action<IProtocolPayload> _receivedPayloadAction;
         Action<int> _receivedControlAction;
         Action<byte[], int, int> _sendBufferAction;
+
+        Action<Package> _dealHeartAction;
+        Timer _timerHeart;
 
         public DProtocolBuilder(
             ILogger<DProtocolBuilder> logger
@@ -33,8 +39,16 @@ namespace D.FreeExchange
 
             _builderRunning = false;
 
+            _instanceID = Guid.NewGuid().ToString();
+            _runningMode = ProtocolBuilderRunningMode.Client;
+
             InitSend();
             InitReceive();
+        }
+
+        public override string ToString()
+        {
+            return $"DPB[{_instanceID}]";
         }
 
         #region IProtocolBuilder 实现
@@ -203,6 +217,8 @@ namespace D.FreeExchange
 
         private void DistributeIndexTask()
         {
+            _logger.LogTrace($"{this} distribute index thread start to run");
+
             while (_builderRunning)
             {
                 Package toDistributeIndexPackage = null;
@@ -235,6 +251,8 @@ namespace D.FreeExchange
                     _continueSendingMre.WaitOne();
                 }
             }
+
+            _logger.LogTrace($"{this} distribute index thread stop");
         }
 
         private Task CleanAndRepeat()
@@ -430,7 +448,24 @@ namespace D.FreeExchange
             });
         }
 
-        private void DealHeart(Package package)
+        /// <summary>
+        /// server mode 下，处理心跳
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealHeartWhenServerMode(Package package)
+        {
+            if (_sendBufferAction != null)
+            {
+                var buffer = package.ToBuffer();
+                _sendBufferAction(buffer, 0, buffer.Length);
+            }
+        }
+
+        /// <summary>
+        /// server mode 下，处理心跳
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealHeartWhenClientMode(Package package)
         {
             if (_sendBufferAction != null)
             {
@@ -604,5 +639,7 @@ namespace D.FreeExchange
         }
 
         #endregion
+
+
     }
 }
