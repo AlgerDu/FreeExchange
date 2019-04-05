@@ -15,11 +15,13 @@ namespace D.FreeExchange.Protocol.DP
 
     internal interface IShareData
     {
+        Encoding Encoding { get; }
+
         bool BuilderIsRunning { get; set; }
 
         ManualResetEvent MRE_ContinueSending { get; }
 
-        void SetOptions(DProtocolBuilderOptions options);
+        DProtocolBuilderOptions Options { get; set; }
 
         IReadOnlyDictionary<int, IPackageInfo> SendingPaks { get; }
 
@@ -28,7 +30,7 @@ namespace D.FreeExchange.Protocol.DP
 
     internal interface IPayloadAnalyser
     {
-        IPackage[] Analyse(IProtocolPayload payload);
+        IEnumerable<IPackage> Analyse(IProtocolPayload payload);
     }
 
     /// <summary>
