@@ -5,6 +5,7 @@ using System.Text;
 namespace D.FreeExchange.Protocol.DP
 {
     class PackageWithPayload : PackageHeader
+        , IPackageWithIndex
     {
         /// <summary>
         /// 包编号

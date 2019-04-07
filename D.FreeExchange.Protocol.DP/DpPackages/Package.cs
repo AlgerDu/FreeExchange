@@ -40,6 +40,11 @@ namespace D.FreeExchange.Protocol.DP
         byte[] ToBuffer();
     }
 
+    public interface IPackageWithIndex : IPackage
+    {
+        int Index { get; }
+    }
+
     /// <summary>
     /// package header 的定义
     /// </summary>

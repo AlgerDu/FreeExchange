@@ -8,6 +8,7 @@ namespace D.FreeExchange.Protocol.DP
     /// 带有 index 数据的包
     /// </summary>
     public class PackageWithIndex : PackageHeader
+        , IPackageWithIndex
     {
         /// <summary>
         /// 包编号
