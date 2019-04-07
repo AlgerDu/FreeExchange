@@ -38,6 +38,8 @@ namespace D.FreeExchange.Protocol.DP
         Dictionary<int, IPackageInfo> _sendPaks;
         Dictionary<int, IPackageInfo> _receviePaks;
 
+        public string Uid { get; private set; }
+
         public Encoding Encoding { get; private set; }
 
         public bool BuilderIsRunning { get; set; }
@@ -60,6 +62,8 @@ namespace D.FreeExchange.Protocol.DP
         public ShareData()
         {
             Encoding = Encoding.ASCII;
+
+            Uid = $"DP[{Guid.NewGuid().ToString()}]";
 
             _sendPaks = new Dictionary<int, IPackageInfo>();
             _receviePaks = new Dictionary<int, IPackageInfo>();
