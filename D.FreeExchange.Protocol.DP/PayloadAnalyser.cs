@@ -11,7 +11,7 @@ namespace D.FreeExchange.Protocol.DP
         IShareData _shareData;
 
         public PayloadAnalyser(
-            ILogger<PayloadAnalyser> logger
+            ILogger logger
             , IShareData shareData
             )
         {
