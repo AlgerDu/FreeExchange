@@ -61,6 +61,12 @@ namespace D.FreeExchange.Protocol.DP
 
             lock (pakInfo)
             {
+                if (pakInfo.State == PackageState.Empty)
+                {
+                    _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been cleaned");
+                    return;
+                }
+
                 pakInfo.State = PackageState.Sended;
                 pakInfo.Package = null;
 
@@ -163,6 +169,8 @@ namespace D.FreeExchange.Protocol.DP
 
         private void AddToSendDicAndSend(IPackageWithIndex pak)
         {
+            _logger.LogTrace($"{_shareData.Uid} send pak {pak.Index}");
+
             var pakInfo = _shareData.SendingPaks[pak.Index];
 
             lock (pakInfo)
@@ -203,6 +211,8 @@ namespace D.FreeExchange.Protocol.DP
                 if (pakInfo.State == PackageState.ToSend
                     || pakInfo.State == PackageState.Sending)
                 {
+                    _logger.LogTrace($"{_shareData.Uid} repeat send pak {id}");
+
                     SendPackage(pakInfo.Package);
                 }
                 else
@@ -221,6 +231,8 @@ namespace D.FreeExchange.Protocol.DP
         {
             return Task.Run(() =>
             {
+                _logger.LogTrace($"{_shareData.Uid} send clean pak");
+
                 var pak = new PackageWithIndex(PackageCode.Clean)
                 {
                     Index = pakIndex
