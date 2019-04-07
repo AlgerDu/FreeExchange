@@ -29,11 +29,18 @@ namespace D.FreeExchange
         [DefaultValue(10)]
         public int HeartInterval { get; set; }
 
+        /// <summary>
+        /// 数据包重新发送时间（ms）
+        /// </summary>
+        [DefaultValue(50)]
+        public int PaylodPakRepeatSendInterval { get; set; }
+
         public DProtocolBuilderOptions()
         {
             MaxPayloadDataLength = 65536;
             MaxPackageBuffer = 2048;
             HeartInterval = 10;
+            PaylodPakRepeatSendInterval = 50;
         }
     }
 }
