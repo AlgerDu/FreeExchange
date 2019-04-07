@@ -18,6 +18,7 @@ namespace D.FreeExchange.Protocol.DP
         Action<byte[], int, int> _sendBufferAction;
 
         ManualResetEvent mre_MorePaksToDistrubute;
+        ManualResetEvent mre_ContinueSending;
         Queue<PackageWithPayload> _toDistributeIndexPaks;
 
         HashSet<int> _toRepeatSendPakIDs;
@@ -36,7 +37,10 @@ namespace D.FreeExchange.Protocol.DP
             _shareData = shareData;
 
             _toRepeatSendPakIDs = new HashSet<int>();
+
             mre_MorePaksToDistrubute = new ManualResetEvent(true);
+            mre_ContinueSending = new ManualResetEvent(true);
+
             timer_RepeatSendPaks = new System.Timers.Timer();
             timer_RepeatSendPaks.Elapsed += new System.Timers.ElapsedEventHandler(RepeatSendPaks);
         }
@@ -55,22 +59,40 @@ namespace D.FreeExchange.Protocol.DP
             Task.Run(() => DistributeIndexTask());
         }
 
+        public void Stop()
+        {
+            mre_MorePaksToDistrubute.Set();
+            mre_ContinueSending.Set();
+        }
+
+        public void ContinueSending()
+        {
+            mre_ContinueSending.Set();
+        }
+
         public void ReceivedIndexPak(int pakIndex)
         {
             var pakInfo = _shareData.SendingPaks[pakIndex];
 
             lock (pakInfo)
             {
-                if (pakInfo.State == PackageState.Empty)
+                switch (pakInfo.State)
                 {
-                    _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been cleaned");
-                    return;
+                    case PackageState.Empty:
+                        _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been cleaned");
+                        return;
+
+                    case PackageState.Sended:
+                        _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been sended. (answer pak repeat)");
+                        return;
+
+                    default:
+                        pakInfo.State = PackageState.Sended;
+                        pakInfo.Package = null;
+
+                        _toRepeatSendPakIDs.Remove(pakIndex);
+                        return;
                 }
-
-                pakInfo.State = PackageState.Sended;
-                pakInfo.Package = null;
-
-                _toRepeatSendPakIDs.Remove(pakIndex);
             }
         }
 
@@ -132,7 +154,7 @@ namespace D.FreeExchange.Protocol.DP
                 {
                     Clean();
 
-                    _shareData.MRE_ContinueSending.WaitOne();
+                    mre_ContinueSending.WaitOne();
                 }
             }
 

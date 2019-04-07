@@ -21,8 +21,6 @@ namespace D.FreeExchange.Protocol.DP
 
         bool BuilderIsRunning { get; set; }
 
-        ManualResetEvent MRE_ContinueSending { get; }
-
         DProtocolBuilderOptions Options { get; set; }
 
         IReadOnlyDictionary<int, IPackageInfo> SendingPaks { get; }
@@ -41,6 +39,10 @@ namespace D.FreeExchange.Protocol.DP
     internal interface ISendPart
     {
         void Run();
+
+        void Stop();
+
+        void ContinueSending();
 
         void ReceivedIndexPak(int pakIndex);
 
