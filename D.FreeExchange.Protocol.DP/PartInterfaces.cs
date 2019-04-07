@@ -15,6 +15,8 @@ namespace D.FreeExchange.Protocol.DP
 
     internal interface IShareData
     {
+        string Uid { get; }
+
         Encoding Encoding { get; }
 
         bool BuilderIsRunning { get; set; }
@@ -38,11 +40,13 @@ namespace D.FreeExchange.Protocol.DP
     /// </summary>
     internal interface ISendPart
     {
-        IResult SendCmdPakcage(IPackage package);
+        void Run();
+
+        void ReceivedIndexPak(int pakIndex);
 
         IResult SendPayloadPackages(IEnumerable<IPackage> packages);
 
-        void SetSendBufferAction();
+        void SetSendBufferAction(Action<byte[], int, int> action);
     }
 
     internal interface IPackageFactory
