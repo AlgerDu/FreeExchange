@@ -65,6 +65,11 @@ namespace D.FreeExchange.Protocol.DP
             mre_ContinueSending.Set();
         }
 
+        public void ReceiveAnswer(int pakIndex)
+        {
+            ReceivedIndexPak(pakIndex);
+        }
+
         public void ContinueSending()
         {
             mre_ContinueSending.Set();
@@ -73,6 +78,11 @@ namespace D.FreeExchange.Protocol.DP
         public void ReceivedIndexPak(int pakIndex)
         {
             var pakInfo = _shareData.SendingPaks[pakIndex];
+
+            if (pakInfo.Package.Code == PackageCode.Clean)
+            {
+                ContinueSending();
+            }
 
             lock (pakInfo)
             {

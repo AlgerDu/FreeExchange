@@ -42,9 +42,13 @@ namespace D.FreeExchange.Protocol.DP
 
         void Stop();
 
+        [Obsolete]
         void ContinueSending();
 
+        [Obsolete]
         void ReceivedIndexPak(int pakIndex);
+
+        void ReceiveAnswer(int pakIndex);
 
         IResult SendPayloadPackages(IEnumerable<IPackage> packages);
 
