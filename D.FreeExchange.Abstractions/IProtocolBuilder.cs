@@ -8,6 +8,8 @@ namespace D.FreeExchange
 {
     /// <summary>
     /// 协议建造器
+    /// 1、将 IProtocolPayload 按照协议转换为 buffer 数组
+    /// 2、将 buffer 数组按照协议重新组装回 IProtocolPayload
     /// </summary>
     public interface IProtocolBuilder
     {
