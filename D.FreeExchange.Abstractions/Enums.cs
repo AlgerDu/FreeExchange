@@ -19,9 +19,9 @@ namespace D.FreeExchange
     }
 
     /// <summary>
-    /// IProtocolBuilder 的运行模式
+    /// 交换协议的运行模式
     /// </summary>
-    public enum ProtocolBuilderRunningMode
+    public enum ExchangeProtocolRunningMode
     {
         /// <summary>
         /// 此模式下，大部分动作都是主动的，如心跳

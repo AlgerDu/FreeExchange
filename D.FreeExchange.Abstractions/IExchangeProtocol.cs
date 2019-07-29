@@ -7,23 +7,25 @@ using System.Threading.Tasks;
 namespace D.FreeExchange
 {
     /// <summary>
-    /// 协议建造器
-    /// 1、将 IProtocolPayload 按照协议转换为 buffer 数组
-    /// 2、将 buffer 数组按照协议重新组装回 IProtocolPayload
+    /// 交换协议
     /// </summary>
-    public interface IProtocolBuilder
+    public interface IExchangeProtocol
     {
         /// <summary>
         /// 启动运行
         /// </summary>
-        /// <param name="mode">以那种模式运行</param>
+        /// <param name="mode">以哪种模式运行</param>
         /// <returns></returns>
-        Task<IResult> Run(ProtocolBuilderRunningMode mode);
+        Task<IResult> Run(ExchangeProtocolRunningMode mode);
 
+        /// <summary>
+        /// 停止运行，清理所有的缓存
+        /// </summary>
+        /// <returns></returns>
         Task<IResult> Stop();
 
         /// <summary>
-        /// 向 IProtocolBuilder 推送需要解析的 buffer 数据
+        /// 向 IExchangeProtocol 推送需要解析的 buffer 数据
         /// </summary>
         /// <param name="buffer">byte 数组</param>
         /// <param name="offset">偏移量</param>
@@ -48,7 +50,7 @@ namespace D.FreeExchange
         /// 设置接收到控制命令的回调函数
         /// </summary>
         /// <param name="action"></param>
-        void SetReceivedControlAction(Action<int> action);
+        void SetReceivedControlAction(Action<int, DateTimeOffset> action);
 
         /// <summary>
         /// 设置当需要发送 buffer 数据时的回调函数
