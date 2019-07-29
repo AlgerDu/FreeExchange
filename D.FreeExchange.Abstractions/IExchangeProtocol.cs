@@ -50,7 +50,7 @@ namespace D.FreeExchange
         /// 设置接收到控制命令的回调函数
         /// </summary>
         /// <param name="action"></param>
-        void SetReceivedControlAction(Action<int, DateTimeOffset> action);
+        void SetReceivedCmdAction(Action<int, DateTimeOffset> action);
 
         /// <summary>
         /// 设置当需要发送 buffer 数据时的回调函数
