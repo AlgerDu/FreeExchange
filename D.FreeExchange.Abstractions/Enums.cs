@@ -35,6 +35,18 @@ namespace D.FreeExchange
     }
 
     /// <summary>
+    /// 交换协议的命令
+    /// </summary>
+    public enum ExchangeProtocolCmd
+    {
+        Connected,
+        Disconnected,
+        Heart,
+        Offline,
+        BackOnline
+    }
+
+    /// <summary>
     /// 交换码
     /// </summary>
     public enum ExchangeCode
