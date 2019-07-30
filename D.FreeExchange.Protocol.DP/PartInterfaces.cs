@@ -21,7 +21,7 @@ namespace D.FreeExchange.Protocol.DP
 
         bool BuilderIsRunning { get; set; }
 
-        DProtocolBuilderOptions Options { get; set; }
+        DProtocolOptions Options { get; set; }
 
         IReadOnlyDictionary<int, IPackageInfo> SendingPaks { get; }
 

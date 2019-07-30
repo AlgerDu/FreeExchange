@@ -14,6 +14,18 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         public int Timestamp { get; set; }
 
+        public DateTimeOffset HeartTime
+        {
+            get
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(Timestamp);
+            }
+            set
+            {
+                Timestamp = (int)value.ToUnixTimeSeconds();
+            }
+        }
+
         public HeartPackage()
             : base(PackageCode.Heart)
         {

@@ -8,7 +8,7 @@ namespace D.FreeExchange
     /// <summary>
     /// 自定义 DProtocol 的一些可选参数
     /// </summary>
-    public class DProtocolBuilderOptions
+    public class DProtocolOptions
     {
         /// <summary>
         /// 数据包中数据的最大长度；
@@ -35,7 +35,7 @@ namespace D.FreeExchange
         [DefaultValue(50)]
         public int PaylodPakRepeatSendInterval { get; set; }
 
-        public DProtocolBuilderOptions()
+        public DProtocolOptions()
         {
             MaxPayloadDataLength = 65536;
             MaxPackageBuffer = 2048;

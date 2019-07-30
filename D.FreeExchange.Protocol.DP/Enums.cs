@@ -22,6 +22,11 @@ namespace D.FreeExchange.Protocol.DP
         Single
     }
 
+    public enum ProtocolCmd
+    {
+        Heart
+    }
+
     public enum PackageCode
     {
         Connect = 0,

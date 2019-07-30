@@ -1,4 +1,4 @@
-using D.FreeExchange;
+using D.FreeExchange.Protocol.DP;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Test.DProtocolBuilder
@@ -9,19 +9,14 @@ namespace Test.DProtocolBuilder
         [TestMethod]
         public void Test_Haad()
         {
-            var p1 = new Package();
-            p1.Flag = FlagCode.End;
-            p1.Code = PackageCode.Heart;
+            var p1 = new PackageHeader(PackageCode.Heart, FlagCode.Single);
 
             var buffer = p1.ToBuffer();
 
             Assert.AreEqual(buffer.Length, 1);
 
-            var p2 = new Package();
-            var index = 0;
-            var need = p2.PushBuffer(buffer, ref index, buffer.Length);
+            var p2 = new PackageHeader(buffer[0]);
 
-            Assert.AreEqual(need, 0);
             Assert.AreEqual(p1.Flag, p2.Flag);
             Assert.AreEqual(p1.Code, p2.Code);
         }

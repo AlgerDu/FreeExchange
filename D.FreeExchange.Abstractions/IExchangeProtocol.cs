@@ -35,6 +35,7 @@ namespace D.FreeExchange
 
         /// <summary>
         /// 向 IProtocolBuilder 推送需要解析的 payload 数据
+        /// TODO 这里到底需不需要异步，还是上面的接口也改成异步
         /// </summary>
         /// <param name="payload"></param>
         /// <returns></returns>

@@ -33,7 +33,7 @@ namespace D.FreeExchange.Protocol.DP
 
     internal class ShareData : IShareData
     {
-        DProtocolBuilderOptions _options;
+        DProtocolOptions _options;
 
         Dictionary<int, IPackageInfo> _sendPaks;
         Dictionary<int, IPackageInfo> _receviePaks;
@@ -46,12 +46,13 @@ namespace D.FreeExchange.Protocol.DP
 
         public ManualResetEvent MRE_ContinueSending { get; private set; }
 
-        public DProtocolBuilderOptions Options
+        public DProtocolOptions Options
         {
             get => _options;
             set
             {
                 _options = value;
+                ResetPakBuffers();
             }
         }
 
