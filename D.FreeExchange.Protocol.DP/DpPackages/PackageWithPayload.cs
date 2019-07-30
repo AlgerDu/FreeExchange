@@ -15,7 +15,7 @@ namespace D.FreeExchange.Protocol.DP
         /// <summary>
         /// 负载数据长度；赋值时会重置 Payload 和 
         /// </summary>
-        public int PayloadLength { get; private set; }
+        public int PayloadLength { get; protected set; }
 
         /// <summary>
         /// 负载数据
