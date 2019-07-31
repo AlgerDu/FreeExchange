@@ -22,9 +22,16 @@ namespace D.FreeExchange.Protocol.DP
         Single
     }
 
-    public enum ProtocolCmd
+    /// <summary>
+    /// 协议的一些状态
+    /// </summary>
+    internal enum ProtocolState
     {
-        Heart
+        Stop,
+        Online,
+        Offline,
+        Connectting,
+        Closing
     }
 
     public enum PackageCode
@@ -32,6 +39,7 @@ namespace D.FreeExchange.Protocol.DP
         Connect = 0,
         Disconnect,
         Heart,
+        ConnectOK,
 
         Clean = 4,
         CleanUp,
