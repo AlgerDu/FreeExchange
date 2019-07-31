@@ -5,19 +5,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using D.FreeExchange.Protocol.DP;
 using D.Utils;
 using Microsoft.Extensions.Logging;
 
-namespace D.FreeExchange.Protocol.DP
+namespace D.FreeExchange
 {
-    internal class SendPart : ISendPart
+    public partial class DProtocol
     {
-        ILogger _logger;
-        IShareData _shareData;
-        bool _running;
-
-        Action<byte[], int, int> _sendBufferAction;
-
         ManualResetEvent mre_MorePaksToDistrubute;
         ManualResetEvent mre_ContinueSending;
         Queue<PackageWithPayload> _toDistributeIndexPaks;
@@ -29,78 +24,81 @@ namespace D.FreeExchange.Protocol.DP
 
         System.Timers.Timer timer_RepeatSendPaks;
 
-        public SendPart(
-            ILogger logger
-            )
+        /// <summary>
+        /// send 部分初始化
+        /// </summary>
+        private void Send_Init()
         {
-            _logger = logger;
-            _running = false;
-
             mre_MorePaksToDistrubute = new ManualResetEvent(true);
             mre_ContinueSending = new ManualResetEvent(true);
 
             timer_RepeatSendPaks = new System.Timers.Timer();
             timer_RepeatSendPaks.Elapsed += new System.Timers.ElapsedEventHandler(RepeatSendPaks);
-        }
-
-        public void Init(IShareData shareData)
-        {
-            _shareData = shareData;
 
             _toRepeatSendPakIDs = new HashSet<int>();
 
-            var maxPakBuffer = _shareData.Options.MaxPackageBuffer;
+            var maxPakBuffer = _options.MaxPackageBuffer;
 
             _currIndex = 0;
             _maxSendIndex = maxPakBuffer * 4;
             _toDistributeIndexPaks = new Queue<PackageWithPayload>(maxPakBuffer);
 
-            timer_RepeatSendPaks.Interval = _shareData.Options.PaylodPakRepeatSendInterval;
+            timer_RepeatSendPaks.Interval = _options.PaylodPakRepeatSendInterval;
         }
 
-        public void Run()
+        /// <summary>
+        /// send 部分开始运行
+        /// </summary>
+        private void Send_Run()
         {
             lock (this)
             {
-                _running = true;
-
                 timer_RepeatSendPaks.Start();
 
                 Task.Run(() => DistributeIndexTask());
             }
         }
 
-        public void Stop()
+        /// <summary>
+        /// send 部分停止运行
+        /// </summary>
+        private void Send_Stop()
         {
             lock (this)
             {
-
-                _running = false;
                 timer_RepeatSendPaks.Stop();
             }
         }
 
-        public void Clear()
+        /// <summary>
+        /// 暂定发送
+        /// </summary>
+        private void Send_Pause()
         {
-            Stop();
+
+        }
+
+        private void Send_Clear()
+        {
+            Send_Stop();
 
             mre_MorePaksToDistrubute.Set();
             mre_ContinueSending.Set();
         }
 
-        public void ReceiveAnswer(int pakIndex)
+        private void ReceiveAnswer(int pakIndex)
         {
             ReceivedIndexPak(pakIndex);
         }
 
-        public void ContinueSending()
+        private void ContinueSending()
         {
             mre_ContinueSending.Set();
         }
 
-        public void ReceivedIndexPak(int pakIndex)
+        private void ReceivedIndexPak(int pakIndex)
         {
-            var pakInfo = _shareData.SendingPaks[pakIndex];
+            var pakInfo = _sendingPaks[pakIndex];
 
             if (pakInfo.Package.Code == PackageCode.Clean)
             {
@@ -112,11 +110,11 @@ namespace D.FreeExchange.Protocol.DP
                 switch (pakInfo.State)
                 {
                     case PackageState.Empty:
-                        _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been cleaned");
+                        _logger.LogTrace($"{this} pak {pakIndex} has been cleaned");
                         return;
 
                     case PackageState.Sended:
-                        _logger.LogTrace($"{_shareData.Uid} pak {pakIndex} has been sended. (answer pak repeat)");
+                        _logger.LogTrace($"{this} pak {pakIndex} has been sended. (answer pak repeat)");
                         return;
 
                     default:
@@ -129,11 +127,11 @@ namespace D.FreeExchange.Protocol.DP
             }
         }
 
-        public IResult SendPayloadPackages(IEnumerable<IPackage> packages)
+        private IResult SendPayloadPackages(IEnumerable<IPackage> packages)
         {
             lock (this)
             {
-                if (_toDistributeIndexPaks.Count + packages.Count() > _shareData.Options.MaxPackageBuffer)
+                if (_toDistributeIndexPaks.Count + packages.Count() > _options.MaxPackageBuffer)
                 {
                     return Result.Create((int)ExchangeCode.SentBufferFull, "发送区缓存已满");
                 }
@@ -149,16 +147,11 @@ namespace D.FreeExchange.Protocol.DP
             return Result.CreateSuccess();
         }
 
-        public void SetSendBufferAction(Action<byte[], int, int> action)
-        {
-            _sendBufferAction = action;
-        }
-
         private void DistributeIndexTask()
         {
-            _logger.LogTrace($"{_shareData.Uid} distribute index thread start to run");
+            _logger.LogTrace($"{this} distribute index thread start to run");
 
-            while (_shareData.BuilderIsRunning)
+            while (_state == ProtocolState.Online)
             {
                 PackageWithPayload toDistributeIndexPak = null;
 
@@ -183,7 +176,7 @@ namespace D.FreeExchange.Protocol.DP
                     _currIndex = (_currIndex + 1) % _maxSendIndex;
                 }
 
-                if (_currIndex % _shareData.Options.MaxPackageBuffer == 0)
+                if (_currIndex % _options.MaxPackageBuffer == 0)
                 {
                     Clean();
 
@@ -191,7 +184,7 @@ namespace D.FreeExchange.Protocol.DP
                 }
             }
 
-            _logger.LogTrace($"{_shareData.Uid} distribute index thread stop");
+            _logger.LogTrace($"{this} distribute index thread stop");
         }
 
         private Task Clean()
@@ -207,7 +200,7 @@ namespace D.FreeExchange.Protocol.DP
 
                 do
                 {
-                    var pakInfo = _shareData.SendingPaks[toCleanIndex];
+                    var pakInfo = _sendingPaks[toCleanIndex];
 
                     lock (pakInfo)
                     {
@@ -218,15 +211,15 @@ namespace D.FreeExchange.Protocol.DP
 
                     toCleanIndex = (toCleanIndex + 1) % _maxSendIndex;
                     cleanCount++;
-                } while (cleanCount < _shareData.Options.MaxPackageBuffer);
+                } while (cleanCount < _options.MaxPackageBuffer);
             });
         }
 
         private void AddToSendDicAndSend(IPackageWithIndex pak)
         {
-            _logger.LogTrace($"{_shareData.Uid} send pak {pak.Index}");
+            _logger.LogTrace($"{this} send pak {pak.Index}");
 
-            var pakInfo = _shareData.SendingPaks[pak.Index];
+            var pakInfo = _sendingPaks[pak.Index];
 
             lock (pakInfo)
             {
@@ -237,22 +230,6 @@ namespace D.FreeExchange.Protocol.DP
             SendPackage(pak);
         }
 
-        private Task SendPackage(IPackage package)
-        {
-            return Task.Run(() =>
-            {
-                if (_sendBufferAction != null)
-                {
-                    var buffer = package.ToBuffer();
-                    _sendBufferAction(buffer, 0, buffer.Length);
-                }
-                else
-                {
-                    _logger.LogWarning($"{_shareData.Uid} SendBufferAction is null");
-                }
-            });
-        }
-
         private void RepeatSendPaks(object sender, ElapsedEventArgs e)
         {
             timer_RepeatSendPaks.Stop();
@@ -261,12 +238,12 @@ namespace D.FreeExchange.Protocol.DP
 
             foreach (var id in ids)
             {
-                var pakInfo = _shareData.SendingPaks[id];
+                var pakInfo = _sendingPaks[id];
 
                 if (pakInfo.State == PackageState.ToSend
                     || pakInfo.State == PackageState.Sending)
                 {
-                    _logger.LogTrace($"{_shareData.Uid} repeat send pak {id}");
+                    _logger.LogTrace($"{this} repeat send pak {id}");
 
                     SendPackage(pakInfo.Package);
                 }
@@ -276,7 +253,7 @@ namespace D.FreeExchange.Protocol.DP
                 }
             }
 
-            if (_shareData.BuilderIsRunning)
+            if (_state == ProtocolState.Online)
             {
                 timer_RepeatSendPaks.Start();
             }
@@ -286,7 +263,7 @@ namespace D.FreeExchange.Protocol.DP
         {
             return Task.Run(() =>
             {
-                _logger.LogTrace($"{_shareData.Uid} send clean pak");
+                _logger.LogTrace($"{this} send clean pak");
 
                 var pak = new PackageWithIndex(PackageCode.Clean)
                 {

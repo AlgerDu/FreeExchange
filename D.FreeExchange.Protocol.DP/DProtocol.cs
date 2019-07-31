@@ -14,8 +14,7 @@ namespace D.FreeExchange
     /// <summary>
     /// 自定义 UDP 协议构造器
     /// </summary>
-    public class DProtocol : IExchangeProtocol
-        , IProtocolData
+    public partial class DProtocol : IExchangeProtocol
     {
         ILogger _logger;
 
@@ -25,49 +24,30 @@ namespace D.FreeExchange
         Action<int, DateTimeOffset> _receivedCmdAction;
         Action<byte[], int, int> _sendBufferAction;
 
-        Timer timer_heart;
-        DateTimeOffset _lastHeartTime;
-        DateTimeOffset _lastHeartPackageTime;
-        bool _lastCheckIsOnline;
-
-        ISendPart _sendPart;
         IPayloadAnalyser _payloadAnalyser;
         IPackageFactory _pakFactory;
-
-        #region IProtocolData
-
-        internal string Uid { get; set; }
-
-        internal Encoding Encoding { get; set; }
-
-        internal ProtocolState State { get; set; }
-
-        internal DProtocolOptions Options { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-        internal IReadOnlyDictionary<int, IPackageInfo> SendingPaks => throw new NotImplementedException();
-
-        internal IReadOnlyDictionary<int, IPackageInfo> ReceivingPaks => throw new NotImplementedException();
-
-        #endregion
 
         public DProtocol(
             ILogger<DProtocol> logger
             , IOptions<DProtocolOptions> options
             )
         {
+            _encoding = Encoding.Default;
+            _uid = $"DP[{Guid.NewGuid().ToString()}]";
+
             _logger = logger;
 
-            _shareData = new ShareData();
-            _shareData.Options = options.Value;
+            _options = options.Value;
 
-            _sendPart = new SendPart(logger);
-            _payloadAnalyser = new PayloadAnalyser(logger, _shareData);
+            _payloadAnalyser = new PayloadAnalyser(logger);
             _pakFactory = new PackageFactory();
+
+            _state = ProtocolState.Stop;
         }
 
         public override string ToString()
         {
-            return $"{_shareData.Uid}";
+            return $"{_uid}";
         }
 
         #region IExchangeProtocol 实现
@@ -77,9 +57,12 @@ namespace D.FreeExchange
             {
                 lock (this)
                 {
+                    _runningMode = mode;
+                    _state = ProtocolState.Offline;
+
                     if (_runningMode == ExchangeProtocolRunningMode.Client)
                     {
-                        RunProtocol();
+                        PrepareToRunProtocol();
                     }
                 }
 
@@ -93,9 +76,11 @@ namespace D.FreeExchange
             {
                 lock (this)
                 {
+                    _state = ProtocolState.Stop;
+
                     timer_heart?.Stop();
-                    _shareData.BuilderIsRunning = false;
-                    _sendPart.Clear();
+
+                    Send_Clear();
                 }
 
                 return Result.CreateSuccess();
@@ -115,7 +100,6 @@ namespace D.FreeExchange
         public void SetSendBufferAction(Action<byte[], int, int> action)
         {
             _sendBufferAction = action;
-            _sendPart.SetSendBufferAction(action);
         }
 
         public IResult PushBuffer(byte[] buffer, int offset, int length)
@@ -131,67 +115,24 @@ namespace D.FreeExchange
             {
                 var paks = _payloadAnalyser.Analyse(payload);
 
-                return _sendPart.SendPayloadPackages(paks);
+                return SendPayloadPackages(paks);
             });
         }
+
         #endregion
 
-        private void RunProtocol()
+        /// <summary>
+        /// 准备好相互连接前的准备
+        /// </summary>
+        private void PrepareToRunProtocol()
         {
+            _state = ProtocolState.Connectting;
+
+            ResetOptions(_options);
             InitAndRunHeartTimer();
 
-            _shareData.BuilderIsRunning = true;
-
-            _sendPart.Init(_shareData);
-        }
-
-        private void InitAndRunHeartTimer()
-        {
-            timer_heart = new Timer();
-            timer_heart.Interval = TimeSpan.FromSeconds(_shareData.Options.HeartInterval).TotalMilliseconds;
-
-            timer_heart.Elapsed += (sender, e) =>
-            {
-                CheckIsOnline();
-            };
-
-            if (_runningMode == ExchangeProtocolRunningMode.Client)
-            {
-                timer_heart.Elapsed += (sender, e) =>
-                {
-                    SendHeartPackage();
-                };
-            }
-
-            timer_heart.Start();
-        }
-
-        private void CheckIsOnline()
-        {
-            var isOnline = DateTimeOffset.Now - _lastHeartTime < TimeSpan.FromSeconds(_shareData.Options.HeartInterval * 2);
-
-            if (isOnline != _lastCheckIsOnlibe)
-            {
-                var cmd = isOnline ? ExchangeProtocolCmd.BackOnline : ExchangeProtocolCmd.Offline;
-
-                NotifyCmd(cmd);
-
-                switch (cmd)
-                {
-                    case ExchangeProtocolCmd.Offline:
-                        _sendPart.Stop();
-                        break;
-
-                    case ExchangeProtocolCmd.BackOnline:
-                        SendConnectPackage();
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            _lastCheckIsOnlibe = isOnline;
+            Send_Init();
+            Send_Run();
         }
 
         private async void NotifyCmd(ExchangeProtocolCmd cmd)
@@ -211,37 +152,20 @@ namespace D.FreeExchange
             });
         }
 
-        /// <summary>
-        /// 发送心跳包
-        /// </summary>
-        /// <param name="heart">有参时用于回复心跳包</param>
-        private void SendHeartPackage(IPackage heart = null)
-        {
-            if (heart == null)
-            {
-                heart = new HeartPackage()
-                {
-                    HeartTime = DateTimeOffset.Now
-                };
-            }
-
-            SendPackage(heart);
-        }
-
         private async void SendConnectPackage()
         {
             await Task.Run(() =>
             {
-                var package = new ConnectPackage(_shareData.Encoding);
+                var package = new ConnectPackage(_encoding);
 
                 var connectData = new ConnectPackageData
                 {
-                    Uid = _shareData.Uid
+                    Uid = _uid
                 };
 
                 if (_runningMode == ExchangeProtocolRunningMode.Client)
                 {
-                    connectData.Options = _shareData.Options;
+                    connectData.Options = _options;
                 }
 
                 SendPackage(package);
@@ -355,46 +279,18 @@ namespace D.FreeExchange
             if (_runningMode == ExchangeProtocolRunningMode.Server)
             {
                 var connect = package as ConnectPackage;
-                connect.Encoding = _shareData.Encoding;
+                connect.Encoding = _encoding;
 
                 var connectData = connect.Data;
 
-                _shareData.Options = connectData.Options;
+                ResetOptions(connectData.Options);
 
-                _sendPart.Init(_shareData);
-
-                InitAndRunHeartTimer();
+                RunProtocol();
 
                 SendConnectPackage();
             }
 
             _sendPart.Run();
-        }
-
-        /// <summary>
-        /// server mode 下，处理心跳
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealHeartWhenServerMode(IPackage package)
-        {
-            if (_sendBufferAction != null)
-            {
-                var buffer = package.ToBuffer();
-                _sendBufferAction(buffer, 0, buffer.Length);
-            }
-        }
-
-        /// <summary>
-        /// server mode 下，处理心跳
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealHeartWhenClientMode(IPackage package)
-        {
-            if (_sendBufferAction != null)
-            {
-                var buffer = package.ToBuffer();
-                _sendBufferAction(buffer, 0, buffer.Length);
-            }
         }
 
         private void DealAnswer(IPackage pak)

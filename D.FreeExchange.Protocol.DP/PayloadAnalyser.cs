@@ -8,22 +8,27 @@ namespace D.FreeExchange.Protocol.DP
     internal class PayloadAnalyser : IPayloadAnalyser
     {
         ILogger _logger;
-        IShareData _shareData;
+        Encoding _encoding;
+        DProtocolOptions _options;
 
         public PayloadAnalyser(
             ILogger logger
-            , IShareData shareData
             )
         {
             _logger = logger;
-            _shareData = shareData;
+        }
+
+        public void UpdateParams(Encoding encoding, DProtocolOptions options)
+        {
+            _encoding = encoding;
+            _options = options;
         }
 
         public IEnumerable<IPackage> Analyse(IProtocolPayload payload)
         {
             List<IPackage> packages = new List<IPackage>();
 
-            var textBuffer = _shareData.Encoding.GetBytes(payload.Text);
+            var textBuffer = _encoding.GetBytes(payload.Text);
 
             BufferToPackages(packages, textBuffer, PackageCode.Text);
 
@@ -46,9 +51,9 @@ namespace D.FreeExchange.Protocol.DP
 
             do
             {
-                var length = buffer.Length - offset < _shareData.Options.MaxPayloadDataLength
+                var length = buffer.Length - offset < _options.MaxPayloadDataLength
                     ? buffer.Length - offset
-                    : _shareData.Options.MaxPayloadDataLength;
+                    : _options.MaxPayloadDataLength;
 
                 var package = new PackageWithPayload(code, length);
 

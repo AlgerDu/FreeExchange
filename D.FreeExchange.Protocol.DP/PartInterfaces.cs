@@ -43,6 +43,13 @@ namespace D.FreeExchange.Protocol.DP
 
     internal interface IPayloadAnalyser
     {
+        /// <summary>
+        /// 暂时这样写吧，烦躁
+        /// </summary>
+        /// <param name="encoding"></param>
+        /// <param name="options"></param>
+        void UpdateParams(Encoding encoding, DProtocolOptions options);
+
         IEnumerable<IPackage> Analyse(IProtocolPayload payload);
     }
 
