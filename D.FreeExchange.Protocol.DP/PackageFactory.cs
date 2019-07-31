@@ -28,7 +28,7 @@ namespace D.FreeExchange.Protocol.DP
                 case PackageCode.Text:
                 case PackageCode.ByteDescription:
                 case PackageCode.Byte:
-                    return new ConnectPackage(header);
+                    return new PackageWithPayload(header);
 
                 default:
                     throw new Exception($"不支持的 package code {header.Code}");
