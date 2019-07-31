@@ -38,9 +38,26 @@ namespace D.FreeExchange.Protocol.DP
     /// </summary>
     internal interface ISendPart
     {
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        /// <param name="shareData"></param>
+        void Init(IShareData shareData);
+
+        /// <summary>
+        /// 开始发送数据
+        /// </summary>
         void Run();
 
+        /// <summary>
+        /// 停止发送数据
+        /// </summary>
         void Stop();
+
+        /// <summary>
+        /// 清理所有的缓存
+        /// </summary>
+        void Clear();
 
         [Obsolete]
         void ContinueSending();

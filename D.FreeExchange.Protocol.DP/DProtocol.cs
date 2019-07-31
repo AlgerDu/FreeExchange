@@ -44,7 +44,7 @@ namespace D.FreeExchange
             _shareData = new ShareData();
             _shareData.Options = options.Value;
 
-            _sendPart = new SendPart(logger, _shareData);
+            _sendPart = new SendPart(logger);
             _payloadAnalyser = new PayloadAnalyser(logger, _shareData);
             _pakFactory = new PackageFactory();
         }
@@ -54,7 +54,7 @@ namespace D.FreeExchange
             return $"{_shareData.Uid}";
         }
 
-        #region IProtocolBuilder 实现
+        #region IExchangeProtocol 实现
         public Task<IResult> Run(ExchangeProtocolRunningMode mode)
         {
             return Task.Run<IResult>(() =>
@@ -79,7 +79,7 @@ namespace D.FreeExchange
                 {
                     timer_heart?.Stop();
                     _shareData.BuilderIsRunning = false;
-                    _sendPart.Stop();
+                    _sendPart.Clear();
                 }
 
                 return Result.CreateSuccess();
@@ -126,7 +126,7 @@ namespace D.FreeExchange
 
             _shareData.BuilderIsRunning = true;
 
-            _sendPart.Run();
+            _sendPart.Init(_shareData);
         }
 
         private void InitAndRunHeartTimer()
@@ -156,7 +156,23 @@ namespace D.FreeExchange
 
             if (isOnline != _lastCheckIsOnlibe)
             {
-                NotifyCmd(isOnline ? ExchangeProtocolCmd.BackOnline : ExchangeProtocolCmd.Offline);
+                var cmd = isOnline ? ExchangeProtocolCmd.BackOnline : ExchangeProtocolCmd.Offline;
+
+                NotifyCmd(cmd);
+
+                switch (cmd)
+                {
+                    case ExchangeProtocolCmd.Offline:
+                        _sendPart.Stop();
+                        break;
+
+                    case ExchangeProtocolCmd.BackOnline:
+                        SendConnectPackage();
+                        break;
+
+                    default:
+                        break;
+                }
             }
 
             _lastCheckIsOnlibe = isOnline;
@@ -194,6 +210,26 @@ namespace D.FreeExchange
             }
 
             SendPackage(heart);
+        }
+
+        private async void SendConnectPackage()
+        {
+            await Task.Run(() =>
+            {
+                var package = new ConnectPackage(_shareData.Encoding);
+
+                var connectData = new ConnectPackageData
+                {
+                    Uid = _shareData.Uid
+                };
+
+                if (_runningMode == ExchangeProtocolRunningMode.Client)
+                {
+                    connectData.Options = _shareData.Options;
+                }
+
+                SendPackage(package);
+            });
         }
 
         /// <summary>
@@ -241,6 +277,10 @@ namespace D.FreeExchange
             {
                 switch (pakage.Code)
                 {
+                    case PackageCode.Connect:
+                        DealConnect(pakage);
+                        break;
+
                     case PackageCode.Heart:
                         DealHeart(pakage);
                         break;
@@ -271,7 +311,48 @@ namespace D.FreeExchange
         /// <param name="package"></param>
         private void DealHeart(IPackage package)
         {
+            var heart = package as HeartPackage;
 
+            if (heart.HeartTime < _lastHeartPackageTime)
+            {
+                _logger.LogWarning($"{this} 接收到无效的心跳包");
+            }
+            else
+            {
+                _lastHeartTime = DateTimeOffset.Now;
+
+                NotifyCmd(ExchangeProtocolCmd.Heart);
+
+                if (_runningMode == ExchangeProtocolRunningMode.Server)
+                {
+                    SendHeartPackage(package);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理连接包
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealConnect(IPackage package)
+        {
+            if (_runningMode == ExchangeProtocolRunningMode.Server)
+            {
+                var connect = package as ConnectPackage;
+                connect.Encoding = _shareData.Encoding;
+
+                var connectData = connect.Data;
+
+                _shareData.Options = connectData.Options;
+
+                _sendPart.Init(_shareData);
+
+                InitAndRunHeartTimer();
+
+                SendConnectPackage();
+            }
+
+            _sendPart.Run();
         }
 
         /// <summary>

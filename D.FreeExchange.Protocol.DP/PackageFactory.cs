@@ -14,8 +14,10 @@ namespace D.FreeExchange.Protocol.DP
             {
                 case PackageCode.Connect:
                     return new ConnectPackage(header);
+
                 case PackageCode.Heart:
                     return new HeartPackage();
+
                 case PackageCode.Disconnect:
                     return new DisconnectPackage();
 

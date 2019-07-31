@@ -14,6 +14,7 @@ namespace D.FreeExchange.Protocol.DP
     {
         ILogger _logger;
         IShareData _shareData;
+        bool _running;
 
         Action<byte[], int, int> _sendBufferAction;
 
@@ -30,13 +31,10 @@ namespace D.FreeExchange.Protocol.DP
 
         public SendPart(
             ILogger logger
-            , IShareData shareData
             )
         {
             _logger = logger;
-            _shareData = shareData;
-
-            _toRepeatSendPakIDs = new HashSet<int>();
+            _running = false;
 
             mre_MorePaksToDistrubute = new ManualResetEvent(true);
             mre_ContinueSending = new ManualResetEvent(true);
@@ -45,8 +43,12 @@ namespace D.FreeExchange.Protocol.DP
             timer_RepeatSendPaks.Elapsed += new System.Timers.ElapsedEventHandler(RepeatSendPaks);
         }
 
-        public void Run()
+        public void Init(IShareData shareData)
         {
+            _shareData = shareData;
+
+            _toRepeatSendPakIDs = new HashSet<int>();
+
             var maxPakBuffer = _shareData.Options.MaxPackageBuffer;
 
             _currIndex = 0;
@@ -54,13 +56,34 @@ namespace D.FreeExchange.Protocol.DP
             _toDistributeIndexPaks = new Queue<PackageWithPayload>(maxPakBuffer);
 
             timer_RepeatSendPaks.Interval = _shareData.Options.PaylodPakRepeatSendInterval;
-            timer_RepeatSendPaks.Start();
+        }
 
-            Task.Run(() => DistributeIndexTask());
+        public void Run()
+        {
+            lock (this)
+            {
+                _running = true;
+
+                timer_RepeatSendPaks.Start();
+
+                Task.Run(() => DistributeIndexTask());
+            }
         }
 
         public void Stop()
         {
+            lock (this)
+            {
+
+                _running = false;
+                timer_RepeatSendPaks.Stop();
+            }
+        }
+
+        public void Clear()
+        {
+            Stop();
+
             mre_MorePaksToDistrubute.Set();
             mre_ContinueSending.Set();
         }

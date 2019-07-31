@@ -14,7 +14,7 @@ namespace D.FreeExchange.Protocol.DP
         /// 自定义唯一标识
         /// 可以用来区分重启和重新连接等等
         /// </summary>
-        public Guid Uid { get; set; }
+        public string Uid { get; set; }
 
         /// <summary>
         /// 可选配置参数
