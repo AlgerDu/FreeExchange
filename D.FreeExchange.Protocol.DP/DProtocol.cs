@@ -15,9 +15,9 @@ namespace D.FreeExchange
     /// 自定义 UDP 协议构造器
     /// </summary>
     public class DProtocol : IExchangeProtocol
+        , IProtocolData
     {
         ILogger _logger;
-        IShareData _shareData;
 
         ExchangeProtocolRunningMode _runningMode;
 
@@ -28,11 +28,27 @@ namespace D.FreeExchange
         Timer timer_heart;
         DateTimeOffset _lastHeartTime;
         DateTimeOffset _lastHeartPackageTime;
-        bool _lastCheckIsOnlibe;
+        bool _lastCheckIsOnline;
 
         ISendPart _sendPart;
         IPayloadAnalyser _payloadAnalyser;
         IPackageFactory _pakFactory;
+
+        #region IProtocolData
+
+        internal string Uid { get; set; }
+
+        internal Encoding Encoding { get; set; }
+
+        internal ProtocolState State { get; set; }
+
+        internal DProtocolOptions Options { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        internal IReadOnlyDictionary<int, IPackageInfo> SendingPaks => throw new NotImplementedException();
+
+        internal IReadOnlyDictionary<int, IPackageInfo> ReceivingPaks => throw new NotImplementedException();
+
+        #endregion
 
         public DProtocol(
             ILogger<DProtocol> logger

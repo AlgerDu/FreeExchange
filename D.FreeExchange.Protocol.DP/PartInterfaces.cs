@@ -13,19 +13,32 @@ namespace D.FreeExchange.Protocol.DP
         PackageState State { get; set; }
     }
 
-    internal interface IShareData
+    /// <summary>
+    /// 基础部分；
+    /// 为了降低单个类的代码行数，拆分出来的东西
+    /// </summary>
+    internal interface IProtocolBase
     {
+        /// <summary>
+        /// 运行实例的唯一 ID
+        /// </summary>
         string Uid { get; }
 
         Encoding Encoding { get; }
 
-        bool BuilderIsRunning { get; set; }
+        ProtocolState State { get; }
 
-        DProtocolOptions Options { get; set; }
+        DProtocolOptions Options { get; }
 
         IReadOnlyDictionary<int, IPackageInfo> SendingPaks { get; }
 
         IReadOnlyDictionary<int, IPackageInfo> ReceivingPaks { get; }
+
+        /// <summary>
+        /// 通过回调函数发送包数据
+        /// </summary>
+        /// <param name="package"></param>
+        void SendPackage(IPackage package);
     }
 
     internal interface IPayloadAnalyser
@@ -36,13 +49,13 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 发送部分
     /// </summary>
-    internal interface ISendPart
+    internal interface ISendPart : IDisposable
     {
         /// <summary>
         /// 初始化
         /// </summary>
         /// <param name="shareData"></param>
-        void Init(IShareData shareData);
+        void Init(IProtocolData shareData);
 
         /// <summary>
         /// 开始发送数据
@@ -54,22 +67,9 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         void Stop();
 
-        /// <summary>
-        /// 清理所有的缓存
-        /// </summary>
-        void Clear();
-
-        [Obsolete]
-        void ContinueSending();
-
-        [Obsolete]
-        void ReceivedIndexPak(int pakIndex);
-
         void ReceiveAnswer(int pakIndex);
 
         IResult SendPayloadPackages(IEnumerable<IPackage> packages);
-
-        void SetSendBufferAction(Action<byte[], int, int> action);
     }
 
     internal interface IPackageFactory
