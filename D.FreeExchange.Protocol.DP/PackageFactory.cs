@@ -15,6 +15,9 @@ namespace D.FreeExchange.Protocol.DP
                 case PackageCode.Connect:
                     return new ConnectPackage(header);
 
+                case PackageCode.ConnectOK:
+                    return new ConnectOkPackage(header);
+
                 case PackageCode.Heart:
                     return new HeartPackage();
 
