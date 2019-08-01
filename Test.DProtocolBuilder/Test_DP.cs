@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Linq;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Autofac.Extensions.DependencyInjection;
 
 namespace Test.DProtocolBuilder
 {
@@ -18,29 +20,30 @@ namespace Test.DProtocolBuilder
     {
         readonly IContainer _container;
 
-        IProtocolBuilder _ptlBuilder;
-        DProtocolBuilderOptions _options;
+        IExchangeProtocol _client;
+        IExchangeProtocol _server;
+
+        DProtocolOptions _options;
 
         Dictionary<Guid, TaskCompletionSource<IResult<IProtocolPayload>>> _taskCaches;
 
         public Test_DP()
         {
-            _options = new DProtocolBuilderOptions
-            {
-                HeartInterval = 5,
-                MaxPackageBuffer = 4,
-                MaxPayloadDataLength = 32
-            };
-
             _container = CreateContainer();
 
-            _ptlBuilder = _container.Resolve<IProtocolBuilder>();
+            _client = _container.Resolve<IExchangeProtocol>();
+            _server = _container.Resolve<IExchangeProtocol>();
 
-            _ptlBuilder.SetReceivedControlAction(ReveivedCtlAction);
-            _ptlBuilder.SetReceivedPayloadAction(ReceivedPayloadAction);
-            _ptlBuilder.SetSendBufferAction(MockSendBuffer);
+            _client.SetReceivedCmdAction(ReveivedCtlAction);
+            _client.SetReceivedPayloadAction(ReceivedPayloadAction);
+            _client.SetSendBufferAction(MockClientSendBuffer);
 
-            _ptlBuilder.Run();
+            _client.SetReceivedCmdAction(ReveivedCtlAction);
+            _client.SetReceivedPayloadAction(ReceivedPayloadAction);
+            _client.SetSendBufferAction(MockServerSendBuffer);
+
+            _client.Run(ExchangeProtocolRunningMode.Client);
+            _server.Run(ExchangeProtocolRunningMode.Server);
 
             _taskCaches = new Dictionary<Guid, TaskCompletionSource<IResult<IProtocolPayload>>>();
         }
@@ -107,7 +110,7 @@ namespace Test.DProtocolBuilder
                         Bytes = bytes
                     };
 
-                    var task = _ptlBuilder.PushPayload(payload);
+                    var task = _client.PushPayload(payload);
                     task.Wait();
 
                     var rst = task.Result;
@@ -127,22 +130,25 @@ namespace Test.DProtocolBuilder
         private IContainer CreateContainer()
         {
             var builder = new ContainerBuilder();
+            var service = new ServiceCollection();
+
+            service.AddLogging();
+            service.AddOptions();
+
+            service.ConfigureOptions<DProtocolOptions>();
+
+            builder.Populate(service);
 
             builder.AddMicrosoftExtensions();
 
-            builder.RegisterType<D.FreeExchange.DProtocolBuilder>()
-                .As<IProtocolBuilder>()
+            builder.RegisterType<DProtocol>()
+                .As<IExchangeProtocol>()
                 .AsSelf();
-
-            builder.RegisterInstance<IOptions<DProtocolBuilderOptions>>(
-                Options.Create<DProtocolBuilderOptions>(_options)
-                );
-
 
             return builder.Build();
         }
 
-        private void ReveivedCtlAction(int cmd)
+        private void ReveivedCtlAction(int cmd, DateTimeOffset dateTime)
         {
         }
 
@@ -159,10 +165,16 @@ namespace Test.DProtocolBuilder
             }
         }
 
-        private void MockSendBuffer(byte[] buffer, int offset, int length)
+        private void MockServerSendBuffer(byte[] buffer, int offset, int length)
         {
             // TODO 这里可以模拟下丢包的情况
-            _ptlBuilder.PushBuffer(buffer, offset, length);
+            _client.PushBuffer(buffer, offset, length);
+        }
+
+        private void MockClientSendBuffer(byte[] buffer, int offset, int length)
+        {
+            // TODO 这里可以模拟下丢包的情况
+            _server.PushBuffer(buffer, offset, length);
         }
     }
 
