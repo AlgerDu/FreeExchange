@@ -78,7 +78,13 @@ namespace D.FreeExchange.Protocol.DP
             }
         }
 
-        public int BufferLength { get; protected set; }
+        public virtual int BufferLength
+        {
+            get
+            {
+                return 1;
+            }
+        }
 
         public PackageHeader(byte buffer)
         {

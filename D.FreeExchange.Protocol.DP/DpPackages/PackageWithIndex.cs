@@ -15,12 +15,13 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         public int Index { get; set; }
 
+        public override int BufferLength => 3;
+
         public PackageWithIndex(
             PackageCode code
             , FlagCode flag = FlagCode.Single
             ) : base(code, flag)
         {
-            BufferLength = 3;
         }
 
         public PackageWithIndex(IPackage header)

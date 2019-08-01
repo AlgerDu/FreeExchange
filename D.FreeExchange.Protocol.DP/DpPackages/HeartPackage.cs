@@ -26,10 +26,11 @@ namespace D.FreeExchange.Protocol.DP
             }
         }
 
+        public override int BufferLength => 5;
+
         public HeartPackage()
             : base(PackageCode.Heart)
         {
-            BufferLength = 5;
         }
 
         public override int PushBuffer(byte[] buffer, ref int index, int length)

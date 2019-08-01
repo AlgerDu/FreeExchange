@@ -22,6 +22,8 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         public byte[] Payload { get; set; }
 
+        public override int BufferLength => 5 + PayloadLength;
+
         public PackageWithPayload(
             PackageCode code
             , int payloadLength
