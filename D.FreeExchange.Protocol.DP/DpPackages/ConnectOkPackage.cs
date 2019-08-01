@@ -12,13 +12,11 @@ namespace D.FreeExchange.Protocol.DP
         public ConnectOkPackage()
             : base(PackageCode.ConnectOK)
         {
-            BufferLength = 1;
         }
 
         public ConnectOkPackage(IPackage header)
             : base(header)
         {
-            BufferLength = 1;
         }
     }
 }

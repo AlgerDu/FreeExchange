@@ -9,9 +9,9 @@ namespace D.FreeExchange.Protocol.DP
     /// </summary>
     public class DisconnectPackage : PackageHeader
     {
-        public DisconnectPackage() : base(PackageCode.Disconnect)
+        public DisconnectPackage()
+            : base(PackageCode.Disconnect)
         {
-            BufferLength = 1;
         }
     }
 }
