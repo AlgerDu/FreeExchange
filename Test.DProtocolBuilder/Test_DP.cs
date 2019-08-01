@@ -12,6 +12,8 @@ using System.Linq;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Autofac.Extensions.DependencyInjection;
+using NLog.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Test.DProtocolBuilder
 {
@@ -134,6 +136,12 @@ namespace Test.DProtocolBuilder
 
             service.AddLogging();
             service.AddOptions();
+
+            service.AddLogging(logging =>
+            {
+                logging.AddNLog();
+                logging.SetMinimumLevel(LogLevel.Trace);
+            });
 
             _options = new DProtocolOptions();
 
