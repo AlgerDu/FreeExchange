@@ -24,16 +24,14 @@ namespace Test.DProtocolBuilder
         [TestMethod]
         public void Test_Haad_BigIndex()
         {
-            var p1 = new Package();
-            p1.Flag = FlagCode.End;
-            p1.Code = PackageCode.Clean;
+            var p1 = new PackageWithIndex(PackageCode.Clean);
             p1.Index = 256;
 
             var buffer = p1.ToBuffer();
 
             Assert.AreEqual(buffer.Length, 3);
 
-            var p2 = new Package();
+            var p2 = new PackageWithIndex(PackageCode.Answer);
             var index = 0;
             var need = p2.PushBuffer(buffer, ref index, buffer.Length);
 

@@ -135,7 +135,12 @@ namespace Test.DProtocolBuilder
             service.AddLogging();
             service.AddOptions();
 
-            service.ConfigureOptions<DProtocolOptions>();
+            _options = new DProtocolOptions();
+
+            service.Configure<DProtocolOptions>(option =>
+            {
+                option = _options;
+            });
 
             builder.Populate(service);
 
