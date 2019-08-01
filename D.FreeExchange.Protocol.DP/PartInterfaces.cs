@@ -53,32 +53,6 @@ namespace D.FreeExchange.Protocol.DP
         IEnumerable<IPackage> Analyse(IProtocolPayload payload);
     }
 
-    /// <summary>
-    /// 发送部分
-    /// </summary>
-    internal interface ISendPart : IDisposable
-    {
-        /// <summary>
-        /// 初始化
-        /// </summary>
-        /// <param name="shareData"></param>
-        void Init(IProtocolData shareData);
-
-        /// <summary>
-        /// 开始发送数据
-        /// </summary>
-        void Run();
-
-        /// <summary>
-        /// 停止发送数据
-        /// </summary>
-        void Stop();
-
-        void ReceiveAnswer(int pakIndex);
-
-        IResult SendPayloadPackages(IEnumerable<IPackage> packages);
-    }
-
     internal interface IPackageFactory
     {
         IPackage CreatePackage(byte headBuffer);

@@ -25,6 +25,9 @@ namespace D.FreeExchange
 
         IDictionary<int, IPackageInfo> _receivingPaks;
 
+        int _receiveMaxIndex;
+        int _lastCleanIndex;
+
         /// <summary>
         /// 通过重新设置 options 来调整内部缓存数据的大小
         /// </summary>
@@ -37,6 +40,8 @@ namespace D.FreeExchange
             _options = options;
 
             _payloadAnalyser.UpdateParams(_encoding, _options);
+
+            _receiveMaxIndex = _options.MaxPackageBuffer * 4;
 
             _sendingPaks = new Dictionary<int, IPackageInfo>();
             _receivingPaks = new Dictionary<int, IPackageInfo>();

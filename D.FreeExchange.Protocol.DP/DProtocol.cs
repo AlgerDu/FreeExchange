@@ -43,6 +43,8 @@ namespace D.FreeExchange
             _pakFactory = new PackageFactory();
 
             _state = ProtocolState.Stop;
+
+            _lastCleanIndex = 0;
         }
 
         public override string ToString()
@@ -312,6 +314,39 @@ namespace D.FreeExchange
         }
 
         /// <summary>
+        /// 处理连接包
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealClean(IPackage package)
+        {
+            var pak = package as PackageWithIndex;
+
+            SendAnswerPak(pak.Index);
+
+            lock (_receiveLock)
+            {
+                if (_lastCleanIndex == pak.Index)
+                {
+                    return;
+                }
+                else
+                {
+                    _lastCleanIndex = pak.Index;
+                }
+
+                var offset = 1;
+
+                for (var i = pak.Index
+                    ; offset < _options.MaxPackageBuffer
+                    ; i = (i + _receiveMaxIndex + 1) % _receiveMaxIndex)
+                {
+                    _receivingPaks[i].State = PackageState.Empty;
+                    _receivingPaks[i].Package = null;
+                }
+            }
+        }
+
+        /// <summary>
         /// 处理连接成功
         /// </summary>
         /// <param name="package"></param>
@@ -322,77 +357,57 @@ namespace D.FreeExchange
 
         private void DealAnswer(IPackage pak)
         {
-            _sendPart.ReceiveAnswer((pak as IPackageWithIndex).Index);
+            ReceiveAnswer((pak as IPackageWithIndex).Index);
         }
 
-        private void DealClean(IPackage package)
+        private async void SendAnswerPak(int index)
         {
-            lock (_receiveLock)
+            await Task.Run(() =>
             {
-                var toClendStartIndex = package.Index;
+                var pak = new PackageWithIndex(PackageCode.Answer);
+                pak.Index = index;
 
-                var cleanCount = 0;
-                do
-                {
-                    var toCleanIndex = toClendStartIndex + cleanCount;
-                    cleanCount++;
-
-                    _receiveMark[toCleanIndex] = PackageState.Empty;
-                    _toPackPackages[toCleanIndex] = null;
-
-                } while (cleanCount < _options.MaxPackageBuffer);
-
-                SendCleanUpPak(package.Index);
-            }
+                SendPackage(pak);
+            });
         }
+
+        object _receiveLock = new object();
+
 
         private void DealDataPak(IPackage package)
         {
-            var pakIndex = package.Index;
+            var payloadPak = package as PackageWithPayload;
+            var index = payloadPak.Index;
 
-            SendAnswerPak(pakIndex);
+            SendAnswerPak(index);
 
             lock (_receiveLock)
             {
-                if (_receiveMark[pakIndex] != PackageState.Empty)
+                if (_receivingPaks[index].State != PackageState.Empty)
                 {
                     // 收到了重复的数据包，不做处理
                     return;
                 }
-            }
-
-            lock (_receiveLock)
-            {
-                _receiveMark[pakIndex] = PackageState.ToPackage;
-                _toPackPackages[pakIndex] = package;
+                else
+                {
+                    _receivingPaks[index].State = PackageState.ToPackage;
+                    _receivingPaks[index].Package = payloadPak;
+                }
             }
 
             if (package.Flag == FlagCode.End || package.Flag == FlagCode.Single)
             {
-                TryPackPackageTask(pakIndex);
+                TryPackPackageTask(index);
             }
         }
 
-        private Task SendAnswerPak(int index)
+        private async void TryPackPackageTask(int finIndex)
         {
-            return Task.Run(() =>
+            await Task.Run(() =>
             {
-                var pak = new Package();
-                pak.Flag = FlagCode.End;
-                pak.Code = PackageCode.Answer;
-                pak.Index = index;
+                var info = _receivingPaks[finIndex];
 
-                var buffer = pak.ToBuffer();
-
-                _sendBufferAction(buffer, 0, buffer.Length);
-            });
-        }
-
-        private Task TryPackPackageTask(int finIndex)
-        {
-            return Task.Run(() =>
-            {
-                if (_toPackPackages[finIndex].Flag == FlagCode.Single)
+                if (info.Package.Flag == FlagCode.Single)
                 {
                     PackToPayloadAndDeal(finIndex);
                     return;
@@ -405,11 +420,11 @@ namespace D.FreeExchange
 
                 do
                 {
-                    if (_receiveMark[startIndx] == PackageState.Empty)
+                    if (_receivingPaks[startIndx].State == PackageState.Empty)
                     {
                         goon = false;
                     }
-                    else if (_toPackPackages[startIndx].Flag == FlagCode.Start)
+                    else if (_receivingPaks[startIndx].Package.Flag == FlagCode.Start)
                     {
                         goon = false;
                         can = true;
@@ -429,7 +444,7 @@ namespace D.FreeExchange
 
         private void PackToPayloadAndDeal(int index)
         {
-            Package pak = _toPackPackages[index];
+            var pak = _receivingPaks[index].Package as PackageWithPayload;
 
             var dataPakCount = pak.PayloadLength;
             var buffer = new List<byte>();
@@ -443,11 +458,11 @@ namespace D.FreeExchange
 
             do
             {
-                pak = _toPackPackages[index];
+                pak = _receivingPaks[index].Package as PackageWithPayload;
 
                 if (pak.Code == lastPakCode)
                 {
-                    buffer.AddRange(pak.Data);
+                    buffer.AddRange(pak.Payload);
                 }
 
                 if (pak.Flag == FlagCode.End
@@ -469,7 +484,14 @@ namespace D.FreeExchange
             }
             while (pak.Flag != FlagCode.End && pak.Flag != FlagCode.Single);
 
-            _receivedPayloadAction(payload);
+            try
+            {
+                _receivedPayloadAction?.Invoke(payload);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"{this} 通知处理 payload 出现异常：{ex}");
+            }
         }
     }
 }

@@ -61,7 +61,7 @@ namespace D.FreeExchange.Protocol.DP
             )
             : base(PackageCode.Connect, 0)
         {
-            _encoding = encoding;
+            Encoding = encoding;
         }
     }
 }
