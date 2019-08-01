@@ -4,7 +4,7 @@ using System.Text;
 
 namespace D.FreeExchange.Protocol.DP
 {
-    class PackageWithPayload : PackageHeader
+    public class PackageWithPayload : PackageHeader
         , IPackageWithIndex
     {
         /// <summary>
@@ -44,15 +44,17 @@ namespace D.FreeExchange.Protocol.DP
         {
             var endIndex = index + length < buffer.Length ? index + length : buffer.Length;
 
-            for (; index < endIndex || AnalysedBufferLength < 5; index++)
+            for (; index < endIndex && AnalysedBufferLength < 5; index++)
             {
                 Index = (Index << 8) + buffer[index];
                 AnalysedBufferLength++;
 
                 if (AnalysedBufferLength == 5)
                 {
-                    PayloadLength = Index >> 16;
-                    Index = (Int16)Index;
+                    PayloadLength = (Int16)Index;
+                    Index = Index >> 16;
+
+                    Payload = new byte[PayloadLength];
                 }
             }
 

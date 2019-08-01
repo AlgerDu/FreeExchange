@@ -139,7 +139,7 @@ namespace D.FreeExchange
             lock (this)
             {
                 old = _state;
-                _state = ProtocolState.Offline;
+                State = ProtocolState.Offline;
             }
 
             if (old == ProtocolState.Stop)
@@ -159,7 +159,7 @@ namespace D.FreeExchange
         {
             lock (this)
             {
-                _state = ProtocolState.Connectting;
+                State = ProtocolState.Connectting;
             }
 
             SendConnectPackage();
@@ -169,7 +169,7 @@ namespace D.FreeExchange
         {
             lock (this)
             {
-                _state = ProtocolState.Online;
+                State = ProtocolState.Online;
             }
 
             Send_Run();
@@ -228,7 +228,8 @@ namespace D.FreeExchange
             {
                 try
                 {
-                    _sendBufferAction?.Invoke(package.ToBuffer(), 0, 0);
+                    var buffer = package.ToBuffer();
+                    _sendBufferAction?.Invoke(buffer, 0, buffer.Length);
                 }
                 catch (Exception ex)
                 {
@@ -249,7 +250,7 @@ namespace D.FreeExchange
             // 经过学习，对于 Udp 来说，应该确实是完整的
             var pakage = _pakFactory.CreatePackage(buffer[index++]);
 
-            var need = pakage.PushBuffer(buffer, ref index, length);
+            var need = pakage.PushBuffer(buffer, ref index, length - 1);
 
             if (need > 0)
             {
@@ -265,6 +266,10 @@ namespace D.FreeExchange
                 {
                     case PackageCode.Connect:
                         DealConnect(pakage);
+                        break;
+
+                    case PackageCode.ConnectOK:
+                        DealConnectOK(pakage);
                         break;
 
                     case PackageCode.Heart:

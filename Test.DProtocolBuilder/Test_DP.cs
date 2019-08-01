@@ -40,9 +40,9 @@ namespace Test.DProtocolBuilder
             _client.SetReceivedPayloadAction(ReceivedPayloadAction);
             _client.SetSendBufferAction(MockClientSendBuffer);
 
-            _client.SetReceivedCmdAction(ReveivedCtlAction);
-            _client.SetReceivedPayloadAction(ReceivedPayloadAction);
-            _client.SetSendBufferAction(MockServerSendBuffer);
+            _server.SetReceivedCmdAction(ReveivedCtlAction);
+            _server.SetReceivedPayloadAction(ReceivedPayloadAction);
+            _server.SetSendBufferAction(MockServerSendBuffer);
 
             _client.Run(ExchangeProtocolRunningMode.Client);
             _server.Run(ExchangeProtocolRunningMode.Server);
@@ -134,7 +134,6 @@ namespace Test.DProtocolBuilder
             var builder = new ContainerBuilder();
             var service = new ServiceCollection();
 
-            service.AddLogging();
             service.AddOptions();
 
             service.AddLogging(logging =>

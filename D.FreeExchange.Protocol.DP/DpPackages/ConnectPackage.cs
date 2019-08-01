@@ -8,7 +8,7 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 连接包携带的数据
     /// </summary>
-    internal class ConnectPackageData
+    public class ConnectPackageData
     {
         /// <summary>
         /// 自定义唯一标识
@@ -25,7 +25,7 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 连接包
     /// </summary>
-    internal class ConnectPackage : PackageWithPayload
+    public class ConnectPackage : PackageWithPayload
     {
         public Encoding Encoding { get; set; }
 

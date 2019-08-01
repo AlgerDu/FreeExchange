@@ -1,4 +1,5 @@
 ﻿using D.FreeExchange.Protocol.DP;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -27,6 +28,16 @@ namespace D.FreeExchange
 
         int _receiveMaxIndex;
         int _lastCleanIndex;
+
+        ProtocolState State
+        {
+            set
+            {
+                _logger.LogTrace($"{this} state {_state} => {value}");
+
+                _state = value;
+            }
+        }
 
         /// <summary>
         /// 通过重新设置 options 来调整内部缓存数据的大小

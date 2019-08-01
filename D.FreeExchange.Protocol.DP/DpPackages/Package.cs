@@ -114,7 +114,7 @@ namespace D.FreeExchange.Protocol.DP
 
         public virtual int PushBuffer(byte[] buffer, ref int index, int length)
         {
-            throw new NotImplementedException();
+            return 0;
         }
 
         public virtual byte[] ToBuffer()
