@@ -58,12 +58,8 @@ namespace D.FreeExchange
                 lock (this)
                 {
                     _runningMode = mode;
-                    _state = ProtocolState.Offline;
 
-                    if (_runningMode == ExchangeProtocolRunningMode.Client)
-                    {
-                        PrepareToRunProtocol();
-                    }
+                    ChangeToOffline();
                 }
 
                 return Result.CreateSuccess();
@@ -135,6 +131,48 @@ namespace D.FreeExchange
             Send_Run();
         }
 
+        private void ChangeToOffline()
+        {
+            var old = ProtocolState.Stop;
+            lock (this)
+            {
+                old = _state;
+                _state = ProtocolState.Offline;
+            }
+
+            if (old == ProtocolState.Stop)
+            {
+                if (_runningMode == ExchangeProtocolRunningMode.Client)
+                {
+                    PrepareToRunProtocol();
+                }
+            }
+            else if (old == ProtocolState.Online)
+            {
+                Send_Pause();
+            }
+        }
+
+        private void ChangeToConnectting()
+        {
+            lock (this)
+            {
+                _state = ProtocolState.Connectting;
+            }
+
+            SendConnectPackage();
+        }
+
+        private void ChangeToOnline()
+        {
+            lock (this)
+            {
+                _state = ProtocolState.Online;
+            }
+
+            Send_Run();
+        }
+
         private async void NotifyCmd(ExchangeProtocolCmd cmd)
         {
             await Task.Run(() =>
@@ -156,19 +194,25 @@ namespace D.FreeExchange
         {
             await Task.Run(() =>
             {
-                var package = new ConnectPackage(_encoding);
-
-                var connectData = new ConnectPackageData
+                //如果是连接状态就一直发送
+                while (_state == ProtocolState.Connectting)
                 {
-                    Uid = _uid
-                };
+                    var package = new ConnectPackage(_encoding);
 
-                if (_runningMode == ExchangeProtocolRunningMode.Client)
-                {
-                    connectData.Options = _options;
+                    var connectData = new ConnectPackageData
+                    {
+                        Uid = _uid
+                    };
+
+                    if (_runningMode == ExchangeProtocolRunningMode.Client)
+                    {
+                        connectData.Options = _options;
+                    }
+
+                    SendPackage(package);
+
+                    System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(50));
                 }
-
-                SendPackage(package);
             });
         }
 
@@ -246,36 +290,14 @@ namespace D.FreeExchange
         }
 
         /// <summary>
-        /// 处理收到的心跳包
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealHeart(IPackage package)
-        {
-            var heart = package as HeartPackage;
-
-            if (heart.HeartTime < _lastHeartPackageTime)
-            {
-                _logger.LogWarning($"{this} 接收到无效的心跳包");
-            }
-            else
-            {
-                _lastHeartTime = DateTimeOffset.Now;
-
-                NotifyCmd(ExchangeProtocolCmd.Heart);
-
-                if (_runningMode == ExchangeProtocolRunningMode.Server)
-                {
-                    SendHeartPackage(package);
-                }
-            }
-        }
-
-        /// <summary>
         /// 处理连接包
         /// </summary>
         /// <param name="package"></param>
         private void DealConnect(IPackage package)
         {
+            //每次收到都回复一次，停止掉对面的循环
+            SendPackage(new ConnectOkPackage());
+
             if (_runningMode == ExchangeProtocolRunningMode.Server)
             {
                 var connect = package as ConnectPackage;
@@ -285,12 +307,17 @@ namespace D.FreeExchange
 
                 ResetOptions(connectData.Options);
 
-                RunProtocol();
-
                 SendConnectPackage();
             }
+        }
 
-            _sendPart.Run();
+        /// <summary>
+        /// 处理连接成功
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealConnectOK(IPackage package)
+        {
+            ChangeToOnline();
         }
 
         private void DealAnswer(IPackage pak)

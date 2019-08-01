@@ -1,4 +1,5 @@
 ﻿using D.FreeExchange.Protocol.DP;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -53,18 +54,13 @@ namespace D.FreeExchange
 
                 NotifyCmd(cmd);
 
-                switch (cmd)
+                if (isOnline)
                 {
-                    case ExchangeProtocolCmd.Offline:
-                        Send_Pause();
-                        break;
-
-                    case ExchangeProtocolCmd.BackOnline:
-                        SendConnectPackage();
-                        break;
-
-                    default:
-                        break;
+                    ChangeToConnectting();
+                }
+                else
+                {
+                    ChangeToOffline();
                 }
             }
 
@@ -86,6 +82,31 @@ namespace D.FreeExchange
             }
 
             SendPackage(heart);
+        }
+
+        /// <summary>
+        /// 处理收到的心跳包
+        /// </summary>
+        /// <param name="package"></param>
+        private void DealHeart(IPackage package)
+        {
+            var heart = package as HeartPackage;
+
+            if (heart.HeartTime < _lastHeartPackageTime)
+            {
+                _logger.LogWarning($"{this} 接收到无效的心跳包");
+            }
+            else
+            {
+                _lastHeartTime = DateTimeOffset.Now;
+
+                NotifyCmd(ExchangeProtocolCmd.Heart);
+
+                if (_runningMode == ExchangeProtocolRunningMode.Server)
+                {
+                    SendHeartPackage(package);
+                }
+            }
         }
     }
 }
