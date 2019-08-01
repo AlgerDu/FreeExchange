@@ -20,6 +20,7 @@ namespace D.FreeExchange.Protocol.DP
             , FlagCode flag = FlagCode.Single
             ) : base(code, flag)
         {
+            BufferLength = 3;
         }
 
         public PackageWithIndex(IPackage header)

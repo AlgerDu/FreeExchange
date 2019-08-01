@@ -7,7 +7,7 @@ namespace Test.DProtocolBuilder
     public class Test_Package
     {
         [TestMethod]
-        public void Test_Haad()
+        public void Test_Head()
         {
             var p1 = new PackageHeader(PackageCode.Heart, FlagCode.Single);
 
@@ -22,7 +22,7 @@ namespace Test.DProtocolBuilder
         }
 
         [TestMethod]
-        public void Test_Haad_BigIndex()
+        public void Test_Head_BigIndex()
         {
             var p1 = new PackageWithIndex(PackageCode.Clean);
             p1.Index = 256;
@@ -31,8 +31,10 @@ namespace Test.DProtocolBuilder
 
             Assert.AreEqual(buffer.Length, 3);
 
-            var p2 = new PackageWithIndex(PackageCode.Answer);
-            var index = 0;
+            var header = new PackageHeader(buffer[0]);
+            var p2 = new PackageWithIndex(header);
+
+            var index = 1;
             var need = p2.PushBuffer(buffer, ref index, buffer.Length);
 
             Assert.AreEqual(need, 0);
