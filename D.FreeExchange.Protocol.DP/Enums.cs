@@ -25,7 +25,7 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 协议的一些状态
     /// </summary>
-    internal enum ProtocolState
+    public enum ProtocolState
     {
         Stop,
         Online,
