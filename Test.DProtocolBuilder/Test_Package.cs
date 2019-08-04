@@ -49,23 +49,26 @@ namespace Test.DProtocolBuilder
         {
             Encoding encoding = Encoding.Default;
 
-            var pak1 = new ConnectPackage(encoding);
-            pak1.Data = new ConnectPackageData
+            var pak1Data = new ConnectPackageData
             {
                 Uid = "pak1",
                 Options = new D.FreeExchange.DProtocolOptions()
             };
 
+            var pak1 = new ConnectPackage();
+            pak1.SetData(pak1Data, encoding);
+
             var buffer = pak1.ToBuffer();
 
             var header = new PackageHeader(buffer[0]);
             var pak2 = new ConnectPackage(header);
-            pak2.Encoding = encoding;
 
             var index = 1;
             pak2.PushBuffer(buffer, ref index, buffer.Length - 1);
 
-            Assert.AreEqual(pak1.Data.Uid, pak2.Data.Uid);
+            var pak2Data = pak2.GetData(encoding);
+
+            Assert.AreEqual(pak1Data.Uid, pak2Data.Uid);
         }
     }
 }
