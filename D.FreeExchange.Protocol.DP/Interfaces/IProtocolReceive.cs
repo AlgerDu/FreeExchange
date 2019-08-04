@@ -7,7 +7,7 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 处理接收到的其它包
     /// </summary>
-    public interface IDProtocolReceive
+    public interface IProtocolReceive
     {
     }
 }

@@ -9,7 +9,7 @@ namespace D.FreeExchange.Protocol.DP
     /// 协议的发送部分；
     /// 处理所有有 index 的包的发送；重发，清理等等
     /// </summary>
-    public interface IDProtocolSend
+    public interface IProtocolSend
     {
         /// <summary>
         /// 发送需要分配 xindex 的包

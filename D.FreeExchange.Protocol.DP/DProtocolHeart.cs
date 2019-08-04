@@ -8,10 +8,28 @@ using System.Timers;
 namespace D.FreeExchange
 {
     /// <summary>
-    /// 心跳相关的内容
+    /// 心跳
     /// </summary>
-    public partial class DProtocol
+    public abstract class DProtocolHeart : IDProtocolHeart
     {
+        ILogger _logger;
+        ID
+
+
+        public IDProtocolHeart(
+            ILogger logger
+            , IProtocolCore core
+            )
+        {
+
+        }
+
+        public virtual void DealHerat(IPackage package)
+        {
+            throw new NotImplementedException();
+        }
+
+        // Old ----------------
         Timer timer_heart;
         DateTimeOffset _lastHeartTime;
         DateTimeOffset _lastHeartPackageTime;
