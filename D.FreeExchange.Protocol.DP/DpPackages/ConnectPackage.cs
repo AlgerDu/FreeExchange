@@ -27,29 +27,6 @@ namespace D.FreeExchange.Protocol.DP
     /// </summary>
     public class ConnectPackage : PackageWithPayload
     {
-        public Encoding Encoding { get; set; }
-
-        /// <summary>
-        /// 首次连接，客户端将配置传送给服务端
-        /// </summary>
-        public ConnectPackageData Data
-        {
-            get
-            {
-                var json = Encoding.GetString(Payload);
-
-                return JsonConvert.DeserializeObject<ConnectPackageData>(json);
-            }
-            set
-            {
-                var json = JsonConvert.SerializeObject(value);
-
-                Payload = Encoding.GetBytes(json);
-
-                PayloadLength = Payload.Length;
-            }
-        }
-
         public ConnectPackage(
             IPackage header)
             : base(header)
@@ -57,11 +34,25 @@ namespace D.FreeExchange.Protocol.DP
         }
 
         public ConnectPackage(
-            Encoding encoding
             )
             : base(PackageCode.Connect, 0)
         {
-            Encoding = encoding;
+        }
+
+        public void SetData(ConnectPackageData data, Encoding encoding)
+        {
+            var json = JsonConvert.SerializeObject(data);
+
+            Payload = encoding.GetBytes(json);
+
+            PayloadLength = Payload.Length;
+        }
+
+        public ConnectPackageData GetData(Encoding encoding)
+        {
+            var json = encoding.GetString(Payload);
+
+            return JsonConvert.DeserializeObject<ConnectPackageData>(json);
         }
     }
 }
