@@ -44,6 +44,19 @@ namespace D.FreeExchange.Protocol.DP.Interfaces
         event ProtocolOptionsChangedEventHandler OptionsChanged;
 
         /// <summary>
+        /// 更新状态，需要符合状态的轮转，
+        /// 否则将状态置为停止后，抛出异常
+        /// </summary>
+        /// <param name="newState"></param>
+        void ChangeState(ProtocolState newState);
+
+        /// <summary>
+        /// 刷新可选配置参数
+        /// </summary>
+        /// <param name="options"></param>
+        void RefreshOptons(DProtocolOptions options);
+
+        /// <summary>
         /// 发送包的 buffer 到对面
         /// </summary>
         /// <param name="pak"></param>

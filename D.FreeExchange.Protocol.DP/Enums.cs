@@ -4,7 +4,7 @@ using System.Text;
 
 namespace D.FreeExchange.Protocol.DP
 {
-    internal enum PackageState
+    public enum PackageState
     {
         Empty,
         ToSend,
