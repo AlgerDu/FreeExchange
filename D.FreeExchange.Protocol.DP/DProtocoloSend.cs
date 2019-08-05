@@ -9,7 +9,7 @@ using D.FreeExchange.Protocol.DP;
 using D.Utils;
 using Microsoft.Extensions.Logging;
 
-namespace D.FreeExchange
+namespace D.FreeExchange.Protocol.DP
 {
     /// <summary>
     /// 发送数据的部分
