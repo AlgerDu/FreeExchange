@@ -1,27 +1,36 @@
-﻿using D.FreeExchange.Protocol.DP;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Timers;
 
-namespace D.FreeExchange
+namespace D.FreeExchange.Protocol.DP
 {
     /// <summary>
     /// 心跳
     /// </summary>
-    public abstract class DProtocolHeart : IDProtocolHeart
+    public abstract class ProtocolHeart : IProtocolHeart
     {
         ILogger _logger;
-        ID
+        IProtocolCore _core;
 
+        Timer timer_heart;
+        DateTimeOffset _lastHeartTime;
+        DateTimeOffset _lastHeartPackageTime;
+        bool _lastCheckIsOnline;
 
-        public IDProtocolHeart(
+        public ProtocolHeart(
             ILogger logger
             , IProtocolCore core
             )
         {
+            _logger = logger;
+            _core = core;
 
+            _core.OptionsChanged += new ProtocolOptionsChangedEventHandler(OnOptionsChanged);
+            _core.StateChanged += new ProtocolStateChangedEventHandler(OnStateChanged);
+
+            timer_heart = new Timer();
         }
 
         public virtual void DealHerat(IPackage package)
@@ -29,11 +38,26 @@ namespace D.FreeExchange
             throw new NotImplementedException();
         }
 
+        protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
+        {
+            if (e.OldState == ProtocolState.Stop)
+            {
+                //开启 timer
+            }
+            else if (e.NewState == ProtocolState.Closing || e.NewState == ProtocolState.Stop)
+            {
+                //关闭 timer
+            }
+        }
+
+        protected void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
+        {
+
+        }
+
+        protected void StartHeartTimer()
+
         // Old ----------------
-        Timer timer_heart;
-        DateTimeOffset _lastHeartTime;
-        DateTimeOffset _lastHeartPackageTime;
-        bool _lastCheckIsOnline;
 
         /// <summary>
         /// 初始化并且运行心跳定时器

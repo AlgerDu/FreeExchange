@@ -9,7 +9,7 @@ namespace D.FreeExchange
     /// <summary>
     /// 一些基础公用的数据部分
     /// </summary>
-    public partial class DProtocol
+    public partial class DProtocolo
     {
         /// <summary>
         /// 运行实例的唯一 ID

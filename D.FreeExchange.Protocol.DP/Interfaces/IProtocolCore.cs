@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace D.FreeExchange.Protocol.DP.Interfaces
+namespace D.FreeExchange.Protocol.DP
 {
     /// <summary>
     /// 协议状态修改事件

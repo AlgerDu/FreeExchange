@@ -12,11 +12,14 @@ using Microsoft.Extensions.Options;
 namespace D.FreeExchange
 {
     /// <summary>
-    /// 自定义 UDP 协议构造器
+    /// 自定义 UDP 协议；
     /// </summary>
-    public partial class DProtocol : IExchangeProtocol
+    public class DProtocol : IExchangeProtocol
     {
+        //经过整理之后的这个类，其实只是一个外壳
+
         ILogger _logger;
+        DProtocolOptions _options;
 
         ExchangeProtocolRunningMode _runningMode;
 
@@ -26,6 +29,12 @@ namespace D.FreeExchange
 
         IPayloadAnalyser _payloadAnalyser;
         IPackageFactory _pakFactory;
+
+        IProtocolCore _core;
+
+        IDProtocolHeart _heart;
+        IDProtocolSend _send;
+        IDProtocolReceive _receive;
 
         public DProtocol(
             ILogger<DProtocol> logger

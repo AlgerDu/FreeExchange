@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace D.FreeExchange
 {
-    public partial class DProtocol
+    public partial class DProtocolo
     {
         ManualResetEvent mre_MorePaksToDistrubute;
         ManualResetEvent mre_ContinueSending;
