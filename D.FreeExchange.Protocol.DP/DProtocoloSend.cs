@@ -84,7 +84,7 @@ namespace D.FreeExchange.Protocol.DP
             else if (e.OldState == ProtocolState.Connectting && e.NewState == ProtocolState.Online)
             {
                 //启动发送
-                StopSending();
+                StartSending();
             }
             else if (e.OldState == ProtocolState.Online && e.NewState == ProtocolState.Offline)
             {
