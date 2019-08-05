@@ -128,10 +128,13 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         private void StopSending()
         {
-            timer_RepeatSendPaks.Stop();
+            lock (this)
+            {
+                timer_RepeatSendPaks.Stop();
 
-            mre_ContinueSending.Set();
-            mre_MorePaksToDistrubute.Set();
+                mre_ContinueSending.Set();
+                mre_MorePaksToDistrubute.Set();
+            }
         }
 
         /// <summary>
