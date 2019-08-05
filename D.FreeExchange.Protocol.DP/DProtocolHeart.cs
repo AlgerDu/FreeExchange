@@ -11,13 +11,15 @@ namespace D.FreeExchange.Protocol.DP
     /// </summary>
     public abstract class ProtocolHeart : IProtocolHeart
     {
-        ILogger _logger;
-        IProtocolCore _core;
+        protected ILogger _logger;
+        protected IProtocolCore _core;
 
-        Timer timer_heart;
+        protected Timer timer_heart;
         DateTimeOffset _lastHeartTime;
         DateTimeOffset _lastHeartPackageTime;
         bool _lastCheckIsOnline;
+
+        TimeSpan _heartInterval;
 
         public ProtocolHeart(
             ILogger logger
@@ -30,107 +32,10 @@ namespace D.FreeExchange.Protocol.DP
             _core.OptionsChanged += new ProtocolOptionsChangedEventHandler(OnOptionsChanged);
             _core.StateChanged += new ProtocolStateChangedEventHandler(OnStateChanged);
 
-            timer_heart = new Timer();
+            InitHeartTimer();
         }
 
         public virtual void DealHerat(IPackage package)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
-        {
-            if (e.OldState == ProtocolState.Stop)
-            {
-                //开启 timer
-            }
-            else if (e.NewState == ProtocolState.Closing || e.NewState == ProtocolState.Stop)
-            {
-                //关闭 timer
-            }
-        }
-
-        protected void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
-        {
-
-        }
-
-        protected void StartHeartTimer()
-
-        // Old ----------------
-
-        /// <summary>
-        /// 初始化并且运行心跳定时器
-        /// </summary>
-        private void InitAndRunHeartTimer()
-        {
-            timer_heart = new Timer();
-            timer_heart.Interval = TimeSpan.FromSeconds(_options.HeartInterval).TotalMilliseconds;
-
-            timer_heart.Elapsed += (sender, e) =>
-            {
-                CheckIsOnline();
-            };
-
-            if (_runningMode == ExchangeProtocolRunningMode.Client)
-            {
-                timer_heart.Elapsed += (sender, e) =>
-                {
-                    SendHeartPackage();
-                };
-            }
-
-            timer_heart.Start();
-        }
-
-        /// <summary>
-        /// 检测是否在线
-        /// </summary>
-        private void CheckIsOnline()
-        {
-            var isOnline = DateTimeOffset.Now - _lastHeartTime < TimeSpan.FromSeconds(_options.HeartInterval * 2);
-
-            if (isOnline != _lastCheckIsOnline)
-            {
-                var cmd = isOnline ? ExchangeProtocolCmd.BackOnline : ExchangeProtocolCmd.Offline;
-
-                NotifyCmd(cmd);
-
-                if (isOnline)
-                {
-                    ChangeToConnectting();
-                }
-                else
-                {
-                    ChangeToOffline();
-                }
-            }
-
-            _lastCheckIsOnline = isOnline;
-        }
-
-        /// <summary>
-        /// 发送心跳包
-        /// </summary>
-        /// <param name="heart">有参时用于回复心跳包</param>
-        private void SendHeartPackage(IPackage heart = null)
-        {
-            if (heart == null)
-            {
-                heart = new HeartPackage()
-                {
-                    HeartTime = DateTimeOffset.Now
-                };
-            }
-
-            SendPackage(heart);
-        }
-
-        /// <summary>
-        /// 处理收到的心跳包
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealHeart(IPackage package)
         {
             var heart = package as HeartPackage;
 
@@ -142,13 +47,126 @@ namespace D.FreeExchange.Protocol.DP
             {
                 _lastHeartTime = DateTimeOffset.Now;
 
-                NotifyCmd(ExchangeProtocolCmd.Heart);
+                //if (_runningMode == ExchangeProtocolRunningMode.Server)
+                //{
+                //    SendHeartPackage(package);
+                //}
+            }
+        }
 
-                if (_runningMode == ExchangeProtocolRunningMode.Server)
+        protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
+        {
+            if (e.NewState == ProtocolState.Closing || e.NewState == ProtocolState.Stop)
+            {
+                timer_heart.Stop();
+            }
+            else if (e.OldState == ProtocolState.Stop)
+            {
+                timer_heart.Start();
+            }
+        }
+
+        protected void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
+        {
+            _heartInterval = TimeSpan.FromSeconds(e.Options.HeartInterval);
+
+            timer_heart.Interval = _heartInterval.TotalMilliseconds;
+        }
+
+        protected abstract void InitHeartTimer();
+
+        /// <summary>
+        /// 检测一定时间内有无心跳包，来判定是否在线
+        /// </summary>
+        protected void CheckIsOnline()
+        {
+            var isOnline = DateTimeOffset.Now - _lastHeartTime < _heartInterval;
+
+            if (isOnline != _lastCheckIsOnline)
+            {
+                if (isOnline)
                 {
-                    SendHeartPackage(package);
+                    _core.ChangeState(ProtocolState.Online);
+                    _core.NotifyCmd(ExchangeProtocolCmd.BackOnline, DateTimeOffset.Now);
+                }
+                else
+                {
+                    _core.ChangeState(ProtocolState.Connectting);
                 }
             }
+
+            _lastCheckIsOnline = isOnline;
+        }
+
+        /// <summary>
+        /// 发送心跳包
+        /// </summary>
+        /// <param name="heart">有参时用于回复心跳包</param>
+        protected void SendHeartPackage(IPackage heart = null)
+        {
+            if (heart == null)
+            {
+                heart = new HeartPackage()
+                {
+                    HeartTime = DateTimeOffset.Now
+                };
+            }
+
+            _core.SendPackage(heart);
+        }
+    }
+
+    public class ProtocolHeart_Client : ProtocolHeart
+    {
+        public ProtocolHeart_Client(
+            ILogger logger
+            , IProtocolCore core
+            ) : base(logger, core)
+        {
+
+        }
+
+        protected override void InitHeartTimer()
+        {
+            timer_heart = new Timer();
+
+            timer_heart.Elapsed += new ElapsedEventHandler((sender, e) =>
+            {
+                CheckIsOnline();
+            });
+
+            timer_heart.Elapsed += (sender, e) =>
+            {
+                SendHeartPackage();
+            };
+        }
+    }
+
+    public class ProtocolHeart_Server : ProtocolHeart
+    {
+        public ProtocolHeart_Server(
+            ILogger logger
+            , IProtocolCore core
+            ) : base(logger, core)
+        {
+
+        }
+
+        protected override void InitHeartTimer()
+        {
+            timer_heart = new Timer();
+
+            timer_heart.Elapsed += new ElapsedEventHandler((sender, e) =>
+            {
+                CheckIsOnline();
+            });
+        }
+
+        public override void DealHerat(IPackage package)
+        {
+            _core.SendPackage(package);
+
+            base.DealHerat(package);
         }
     }
 }

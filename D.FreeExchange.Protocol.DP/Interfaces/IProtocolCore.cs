@@ -33,6 +33,8 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         ProtocolState State { get; }
 
+        DProtocolOptions Options { get; }
+
         /// <summary>
         /// 状态改变事件
         /// </summary>
@@ -62,6 +64,13 @@ namespace D.FreeExchange.Protocol.DP
         /// <param name="pak"></param>
         /// <returns></returns>
         Task SendPackage(IPackage pak);
+
+        /// <summary>
+        /// 通知其他地方一些命令
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        Task NotifyCmd(ExchangeProtocolCmd cmd, DateTimeOffset time);
 
         /// <summary>
         /// 处理合并出来的数据
