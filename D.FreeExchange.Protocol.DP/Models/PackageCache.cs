@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace D.FreeExchange.Protocol.DP.Models
+namespace D.FreeExchange.Protocol.DP
 {
     /// <summary>
     /// 包缓存项
