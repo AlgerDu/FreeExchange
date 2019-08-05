@@ -35,6 +35,11 @@ namespace D.FreeExchange.Protocol.DP
             InitHeartTimer();
         }
 
+        public override string ToString()
+        {
+            return $"{_core} heart";
+        }
+
         public virtual void DealHerat(IPackage package)
         {
             var heart = package as HeartPackage;
@@ -46,11 +51,6 @@ namespace D.FreeExchange.Protocol.DP
             else
             {
                 _lastHeartTime = DateTimeOffset.Now;
-
-                //if (_runningMode == ExchangeProtocolRunningMode.Server)
-                //{
-                //    SendHeartPackage(package);
-                //}
             }
         }
 
@@ -59,15 +59,19 @@ namespace D.FreeExchange.Protocol.DP
             if (e.NewState == ProtocolState.Closing || e.NewState == ProtocolState.Stop)
             {
                 timer_heart.Stop();
+                _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 停止心跳定时器");
             }
             else if (e.OldState == ProtocolState.Stop)
             {
                 timer_heart.Start();
+                _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 开启心跳定时器");
             }
         }
 
         protected void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
         {
+            _logger.LogInformation($"{this} 心跳间隔由 {_heartInterval.TotalSeconds} 跟新为 {e.Options.HeartInterval} (S)");
+
             _heartInterval = TimeSpan.FromSeconds(e.Options.HeartInterval);
 
             timer_heart.Interval = _heartInterval.TotalMilliseconds;
@@ -164,6 +168,7 @@ namespace D.FreeExchange.Protocol.DP
 
         public override void DealHerat(IPackage package)
         {
+            //服务端收到心跳之后，需要立马将受到的心跳包回复回去
             _core.SendPackage(package);
 
             base.DealHerat(package);
