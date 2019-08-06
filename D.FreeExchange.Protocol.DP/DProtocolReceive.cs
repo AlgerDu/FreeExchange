@@ -103,6 +103,11 @@ namespace D.FreeExchange.Protocol.DP
             _receivingPaks = new Dictionary<int, PackageCacheItem>(_maxReceiveIndex);
 
             _encoding = e.Encoding;
+
+            for (var i = 0; i < _maxReceiveIndex; i++)
+            {
+                _receivingPaks.Add(i, new PackageCacheItem());
+            }
         }
 
         /// <summary>
@@ -136,7 +141,7 @@ namespace D.FreeExchange.Protocol.DP
             {
                 _receivingPaks?.Clear();
 
-                _lastCleanIndex = 0;
+                _lastCleanIndex = -1;
             }
         }
 
@@ -150,23 +155,19 @@ namespace D.FreeExchange.Protocol.DP
 
             lock (this)
             {
-                if (_lastCleanIndex == pak.Index)
-                {
-                    return;
-                }
-                else
+                if (_lastCleanIndex != pak.Index)
                 {
                     _lastCleanIndex = pak.Index;
-                }
 
-                var offset = 1;
+                    var offset = 1;
 
-                for (var i = pak.Index
-                    ; offset < _maxPakBuffer
-                    ; i = (i + _maxReceiveIndex + 1) % _maxReceiveIndex)
-                {
-                    _receivingPaks[i].State = PackageState.Empty;
-                    _receivingPaks[i].Package = null;
+                    for (var i = pak.Index
+                        ; offset < _maxPakBuffer
+                        ; i = (i + _maxReceiveIndex + 1) % _maxReceiveIndex)
+                    {
+                        _receivingPaks[i].State = PackageState.Empty;
+                        _receivingPaks[i].Package = null;
+                    }
                 }
             }
 

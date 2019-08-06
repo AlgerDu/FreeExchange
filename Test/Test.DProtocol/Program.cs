@@ -61,10 +61,18 @@ namespace Test.DProtocolT
             {
                 Console.WriteLine("yes");
             }
+            else
+            {
+                Console.WriteLine("no");
+            }
 
             if (payload.Bytes.Count() == 0)
             {
                 Console.WriteLine("yes");
+            }
+            else
+            {
+                Console.WriteLine("no");
             }
         }
 

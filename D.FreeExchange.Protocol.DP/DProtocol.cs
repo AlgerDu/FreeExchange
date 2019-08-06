@@ -54,7 +54,7 @@ namespace D.FreeExchange
             _logger = logger;
             _options = options.Value;
 
-            _payloadAnalyser = new PayloadAnalyser(logger);
+            _payloadAnalyser = new PayloadAnalyser(logger, this);
             _pakFactory = new PackageFactory();
 
             _send = new DProtocoloSend(logger, this);
@@ -68,7 +68,7 @@ namespace D.FreeExchange
 
         public override string ToString()
         {
-            return $"DP[{_uid}]";
+            return $"DP[{_runningMode},{_uid}]";
         }
 
         #region IExchangeProtocol 实现
@@ -267,6 +267,8 @@ namespace D.FreeExchange
                     {
                         connectData.Options = _options;
                     }
+
+                    package.SetData(connectData, _encoding);
 
                     SendPackage(package);
 

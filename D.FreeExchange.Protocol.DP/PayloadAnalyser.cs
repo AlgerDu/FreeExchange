@@ -8,20 +8,25 @@ namespace D.FreeExchange.Protocol.DP
     internal class PayloadAnalyser : IPayloadAnalyser
     {
         ILogger _logger;
+        IProtocolCore _core;
         Encoding _encoding;
         DProtocolOptions _options;
 
         public PayloadAnalyser(
             ILogger logger
+            , IProtocolCore core
             )
         {
             _logger = logger;
+            _core = core;
+
+            _core.OptionsChanged += new ProtocolOptionsChangedEventHandler(OnOptionsChanged);
         }
 
-        public void UpdateParams(Encoding encoding, DProtocolOptions options)
+        private void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
         {
-            _encoding = encoding;
-            _options = options;
+            _encoding = e.Encoding;
+            _options = e.Options;
         }
 
         public IEnumerable<IPackage> Analyse(IProtocolPayload payload)

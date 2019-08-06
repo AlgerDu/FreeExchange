@@ -106,6 +106,11 @@ namespace D.FreeExchange.Protocol.DP
             _sendingPaks = new Dictionary<int, PackageCacheItem>(_maxSendIndex);
 
             timer_RepeatSendPaks.Interval = e.Options.PaylodPakRepeatSendInterval;
+
+            for (var i = 0; i < _maxSendIndex; i++)
+            {
+                _sendingPaks.Add(i, new PackageCacheItem());
+            }
         }
 
         /// <summary>

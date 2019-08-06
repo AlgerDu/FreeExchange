@@ -148,7 +148,7 @@ namespace D.FreeExchange.Protocol.DP
 
     public class DProtocolHeart_Server : DProtocolHeart
     {
-        public ProtocolHeart_Server(
+        public DProtocolHeart_Server(
             ILogger logger
             , IProtocolCore core
             ) : base(logger, core)
