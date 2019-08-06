@@ -83,6 +83,8 @@ namespace D.FreeExchange
                     if (mode == ExchangeProtocolRunningMode.Client)
                     {
                         _heart = new DProtocolHeart_Client(_logger, this);
+
+                        RefreshOptions(_options);
                     }
                     else
                     {
@@ -232,11 +234,6 @@ namespace D.FreeExchange
         {
             if (e.NewState == ProtocolState.Offline && _runningMode == ExchangeProtocolRunningMode.Client)
             {
-                RefreshOptions(_options);
-
-                //如果是客户端 Offline => Connectting；
-                //开始尝试也服务端链接
-                ChangeState(ProtocolState.Connectting);
             }
             else if (e.NewState == ProtocolState.Connectting)
             {
@@ -341,6 +338,11 @@ namespace D.FreeExchange
         {
             //每次收到都回复一次，停止掉对面的循环
             SendPackage(new ConnectOkPackage());
+
+            if (_state != ProtocolState.Connectting && _state != ProtocolState.Offline)
+            {
+                return;
+            }
 
             if (_runningMode == ExchangeProtocolRunningMode.Server)
             {
