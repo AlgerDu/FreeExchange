@@ -57,6 +57,9 @@ namespace D.FreeExchange
             _payloadAnalyser = new PayloadAnalyser(logger);
             _pakFactory = new PackageFactory();
 
+            _send = new DProtocoloSend(logger, this);
+            _receive = new DProtocoloReceive(logger, this);
+
             _state = ProtocolState.Stop;
             _needSendConnectingPak = false;
 
@@ -76,6 +79,15 @@ namespace D.FreeExchange
                 lock (this)
                 {
                     _runningMode = mode;
+
+                    if (mode == ExchangeProtocolRunningMode.Client)
+                    {
+                        _heart = new DProtocolHeart_Client(_logger, this);
+                    }
+                    else
+                    {
+                        _heart = new DProtocolHeart_Server(_logger, this);
+                    }
 
                     ChangeState(ProtocolState.Offline);
                 }
@@ -279,11 +291,11 @@ namespace D.FreeExchange
 
             if (need > 0)
             {
-                _logger.LogError($"HACK 出现了 package 数据没有完整接收到的问题");
+                _logger.LogError($"{this} HACK 出现了 package 数据没有完整接收到的问题");
                 return;
             }
 
-            _logger.LogTrace($"接收到 {pakage}");
+            _logger.LogTrace($"{this} 接收到 {pakage}");
 
             Task.Run(() =>
             {

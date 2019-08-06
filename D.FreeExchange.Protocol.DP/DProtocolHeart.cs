@@ -9,7 +9,7 @@ namespace D.FreeExchange.Protocol.DP
     /// <summary>
     /// 心跳
     /// </summary>
-    public abstract class ProtocolHeart : IProtocolHeart
+    public abstract class DProtocolHeart : IProtocolHeart
     {
         protected ILogger _logger;
         protected IProtocolCore _core;
@@ -21,7 +21,7 @@ namespace D.FreeExchange.Protocol.DP
 
         TimeSpan _heartInterval;
 
-        public ProtocolHeart(
+        public DProtocolHeart(
             ILogger logger
             , IProtocolCore core
             )
@@ -120,9 +120,9 @@ namespace D.FreeExchange.Protocol.DP
         }
     }
 
-    public class ProtocolHeart_Client : ProtocolHeart
+    public class DProtocolHeart_Client : DProtocolHeart
     {
-        public ProtocolHeart_Client(
+        public DProtocolHeart_Client(
             ILogger logger
             , IProtocolCore core
             ) : base(logger, core)
@@ -146,7 +146,7 @@ namespace D.FreeExchange.Protocol.DP
         }
     }
 
-    public class ProtocolHeart_Server : ProtocolHeart
+    public class DProtocolHeart_Server : DProtocolHeart
     {
         public ProtocolHeart_Server(
             ILogger logger
