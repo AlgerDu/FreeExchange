@@ -151,8 +151,6 @@ namespace Test.DProtocolBuilder
 
             builder.Populate(service);
 
-            builder.AddMicrosoftExtensions();
-
             builder.RegisterType<DProtocol>()
                 .As<IExchangeProtocol>()
                 .AsSelf();
