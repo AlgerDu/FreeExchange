@@ -14,14 +14,15 @@ namespace D.FreeExchange
     /// <summary>
     /// 自定义 UDP 协议；
     /// </summary>
-    public class DProtocol : IExchangeProtocol
+    public class DProtocol
+        : IExchangeProtocol
+        , IProtocolCore
     {
         //经过整理之后的这个类，其实只是一个外壳
+        //想了下，觉得既是核心又是壳，会好写很多
 
         ILogger _logger;
         DProtocolOptions _options;
-
-        ExchangeProtocolRunningMode _runningMode;
 
         Action<IProtocolPayload> _receivedPayloadAction;
         Action<int, DateTimeOffset> _receivedCmdAction;
@@ -30,11 +31,17 @@ namespace D.FreeExchange
         IPayloadAnalyser _payloadAnalyser;
         IPackageFactory _pakFactory;
 
-        IProtocolCore _core;
+        IProtocolHeart _heart;
+        IProtocolSend _send;
+        IProtocolReceive _receive;
 
-        IDProtocolHeart _heart;
-        IDProtocolSend _send;
-        IDProtocolReceive _receive;
+        ExchangeProtocolRunningMode _runningMode;
+        ProtocolState _state;
+
+        Encoding _encoding;
+        string _uid;
+
+        bool _needSendConnectingPak;
 
         public DProtocol(
             ILogger<DProtocol> logger
@@ -42,23 +49,23 @@ namespace D.FreeExchange
             )
         {
             _encoding = Encoding.Default;
-            _uid = $"DP[{Guid.NewGuid().ToString()}]";
+            _uid = $"{Guid.NewGuid().ToString()}";
 
             _logger = logger;
-
             _options = options.Value;
 
             _payloadAnalyser = new PayloadAnalyser(logger);
             _pakFactory = new PackageFactory();
 
             _state = ProtocolState.Stop;
+            _needSendConnectingPak = false;
 
-            _lastCleanIndex = 0;
+            StateChanged += new ProtocolStateChangedEventHandler(OnStateChanged);
         }
 
         public override string ToString()
         {
-            return $"{_uid}";
+            return $"DP[{_uid}]";
         }
 
         #region IExchangeProtocol 实现
@@ -70,7 +77,7 @@ namespace D.FreeExchange
                 {
                     _runningMode = mode;
 
-                    ChangeToOffline();
+                    ChangeState(ProtocolState.Offline);
                 }
 
                 return Result.CreateSuccess();
@@ -83,11 +90,7 @@ namespace D.FreeExchange
             {
                 lock (this)
                 {
-                    _state = ProtocolState.Stop;
-
-                    timer_heart?.Stop();
-
-                    Send_Clear();
+                    ChangeState(ProtocolState.Stop);
                 }
 
                 return Result.CreateSuccess();
@@ -122,93 +125,126 @@ namespace D.FreeExchange
             {
                 var paks = _payloadAnalyser.Analyse(payload);
 
-                return SendPayloadPackages(paks);
+                return _send.DistributeThenSendPackages(paks);
             });
         }
 
         #endregion
 
-        /// <summary>
-        /// 准备好相互连接前的准备
-        /// </summary>
-        private void PrepareToRunProtocol()
+        #region IProtocolCore 实现
+        public string Uid => _uid;
+
+        public ProtocolState State => _state;
+
+        public DProtocolOptions Options => _options;
+
+        public event ProtocolStateChangedEventHandler StateChanged;
+        public event ProtocolOptionsChangedEventHandler OptionsChanged;
+
+        public void ChangeState(ProtocolState newState)
         {
-            _state = ProtocolState.Connectting;
+            //TODO 控制状态的转换，不能随意的变换
+            var oldState = _state;
+            _state = newState;
 
-            ResetOptions(_options);
-            InitAndRunHeartTimer();
+            _logger.LogInformation($"{this} state {oldState} => {newState}");
 
-            Send_Init();
-            Send_Run();
+            StateChanged?.Invoke(this, new ProtocolStateChangedEventArgs
+            {
+                OldState = oldState,
+                NewState = newState,
+                Time = DateTimeOffset.Now
+            });
         }
 
-        private void ChangeToOffline()
+        public Task DealProtocolPayload(IProtocolPayload payload)
         {
-            var old = ProtocolState.Stop;
-            lock (this)
+            return Task.Run(() =>
             {
-                old = _state;
-                State = ProtocolState.Offline;
-            }
-
-            if (old == ProtocolState.Stop)
-            {
-                if (_runningMode == ExchangeProtocolRunningMode.Client)
-                {
-                    PrepareToRunProtocol();
-                }
-            }
-            else if (old == ProtocolState.Online)
-            {
-                Send_Pause();
-            }
-        }
-
-        private void ChangeToConnectting()
-        {
-            lock (this)
-            {
-                State = ProtocolState.Connectting;
-            }
-
-            SendConnectPackage();
-        }
-
-        private void ChangeToOnline()
-        {
-            lock (this)
-            {
-                State = ProtocolState.Online;
-            }
-
-            Send_Run();
-        }
-
-        private async void NotifyCmd(ExchangeProtocolCmd cmd)
-        {
-            await Task.Run(() =>
-            {
-                var cmdTime = DateTimeOffset.Now;
-
                 try
                 {
-                    _receivedCmdAction?.Invoke((int)cmd, cmdTime);
+                    _receivedPayloadAction(payload);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"在发送 cmd {cmd} {cmdTime} 时出现异常：{ex}");
+                    _logger.LogError($"{this} 在处理 IProtocolPayload 时出现异常：{ex}");
                 }
             });
+        }
+
+        public Task NotifyCmd(ExchangeProtocolCmd cmd, DateTimeOffset time)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    _receivedCmdAction.Invoke((int)cmd, time);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"{this} 在发送 cmd {cmd} {time} 时出现异常：{ex}");
+                }
+            });
+        }
+
+        public void RefreshOptions(DProtocolOptions options)
+        {
+            _options = options;
+
+            OptionsChanged?.Invoke(this, new ProtocolOptionsChangedEventArgs
+            {
+                Encoding = _encoding,
+                Options = _options
+            });
+        }
+
+        public Task SendPackage(IPackage pak)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    var buffer = pak.ToBuffer();
+                    _sendBufferAction.Invoke(buffer, 0, buffer.Length);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"{this} 在发送 package {pak.Code} 数据的过程中出现异常：{ex}");
+                }
+            });
+        }
+
+        #endregion
+
+        protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
+        {
+            if (e.NewState == ProtocolState.Offline && _runningMode == ExchangeProtocolRunningMode.Client)
+            {
+                RefreshOptions(_options);
+
+                //如果是客户端 Offline => Connectting；
+                //开始尝试也服务端链接
+                ChangeState(ProtocolState.Connectting);
+            }
+            else if (e.NewState == ProtocolState.Connectting)
+            {
+                SendConnectPackage();
+            }
         }
 
         private async void SendConnectPackage()
         {
             await Task.Run(() =>
             {
-                //如果是连接状态就一直发送
-                while (_state == ProtocolState.Connectting)
+                lock (this)
                 {
-                    var package = new ConnectPackage(_encoding);
+                    _needSendConnectingPak = true;
+                }
+
+                //当没有收到连接OK包的时候，要一直重复发送
+                while (_needSendConnectingPak)
+                {
+                    var package = new ConnectPackage();
 
                     var connectData = new ConnectPackageData
                     {
@@ -223,26 +259,6 @@ namespace D.FreeExchange
                     SendPackage(package);
 
                     System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(50));
-                }
-            });
-        }
-
-        /// <summary>
-        /// 将 package 转换成 buffer 通过 action 发送出去
-        /// </summary>
-        /// <param name="package"></param>
-        private async void SendPackage(IPackage package)
-        {
-            await Task.Run(() =>
-            {
-                try
-                {
-                    var buffer = package.ToBuffer();
-                    _sendBufferAction?.Invoke(buffer, 0, buffer.Length);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"在发送 package {package.Code} 数据的过程中出现异常：{ex}");
                 }
             });
         }
@@ -282,21 +298,19 @@ namespace D.FreeExchange
                         break;
 
                     case PackageCode.Heart:
-                        DealHeart(pakage);
+                        _heart.DealHerat(pakage);
                         break;
 
                     case PackageCode.Answer:
-                        DealAnswer(pakage);
+                        _send.DealAnswer(pakage);
                         break;
 
                     case PackageCode.Clean:
-                        DealClean(pakage);
-                        break;
 
                     case PackageCode.Text:
                     case PackageCode.ByteDescription:
                     case PackageCode.Byte:
-                        DealDataPak(pakage);
+                        _receive.DealIndexPackage(pakage);
                         break;
                     default:
                         _logger.LogWarning($"尚未处理 Package.Code = {pakage.Code} 类型的 package");
@@ -317,14 +331,15 @@ namespace D.FreeExchange
             if (_runningMode == ExchangeProtocolRunningMode.Server)
             {
                 var connect = package as ConnectPackage;
-                connect.Encoding = _encoding;
 
-                var connectData = connect.Data;
+                var connectData = connect.GetData(_encoding);
 
-                ResetOptions(connectData.Options);
+                RefreshOptions(connectData.Options);
 
                 SendConnectPackage();
             }
+
+            ChangeState(ProtocolState.Online);
         }
 
         /// <summary>
@@ -333,12 +348,10 @@ namespace D.FreeExchange
         /// <param name="package"></param>
         private void DealConnectOK(IPackage package)
         {
-            ChangeToOnline();
-        }
-
-        private void DealAnswer(IPackage pak)
-        {
-            ReceiveAnswer((pak as IPackageWithIndex).Index);
+            lock (this)
+            {
+                _needSendConnectingPak = false;
+            }
         }
     }
 }

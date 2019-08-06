@@ -90,12 +90,12 @@ namespace D.FreeExchange.Protocol.DP
             {
                 if (isOnline)
                 {
-                    _core.ChangeState(ProtocolState.Online);
+                    _core.ChangeState(ProtocolState.Connectting);
                     _core.NotifyCmd(ExchangeProtocolCmd.BackOnline, DateTimeOffset.Now);
                 }
                 else
                 {
-                    _core.ChangeState(ProtocolState.Connectting);
+                    _core.ChangeState(ProtocolState.Offline);
                 }
             }
 

@@ -56,7 +56,7 @@ namespace D.FreeExchange.Protocol.DP
         /// 刷新可选配置参数
         /// </summary>
         /// <param name="options"></param>
-        void RefreshOptons(DProtocolOptions options);
+        void RefreshOptions(DProtocolOptions options);
 
         /// <summary>
         /// 发送包的 buffer 到对面
