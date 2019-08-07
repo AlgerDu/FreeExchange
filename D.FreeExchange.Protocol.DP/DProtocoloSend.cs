@@ -44,8 +44,8 @@ namespace D.FreeExchange.Protocol.DP
             _core.StateChanged += new ProtocolStateChangedEventHandler(OnStateChanged);
 
 
-            mre_MorePaksToDistrubute = new ManualResetEvent(true);
-            mre_ContinueSending = new ManualResetEvent(true);
+            mre_MorePaksToDistrubute = new ManualResetEvent(false);
+            mre_ContinueSending = new ManualResetEvent(false);
 
             timer_RepeatSendPaks = new System.Timers.Timer();
             timer_RepeatSendPaks.Elapsed += new System.Timers.ElapsedEventHandler(RepeatSendPaks);
