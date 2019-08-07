@@ -57,7 +57,7 @@ namespace D.FreeExchange.Protocol.DP
 
         public override string ToString()
         {
-            return $"{_core} send";
+            return $"{_core}";
         }
 
         #region IProtocolSend 接口实现
@@ -207,7 +207,7 @@ namespace D.FreeExchange.Protocol.DP
         /// <param name="pak"></param>
         private void AddToSendDicAndSend(IPackageWithIndex pak)
         {
-            _logger.LogTrace($"{this} send pak {pak.Index}");
+            _logger.LogTrace($"{this} 将 {pak} 加入缓存，并且第一次发送");
 
             var pakInfo = _sendingPaks[pak.Index];
 
@@ -228,8 +228,6 @@ namespace D.FreeExchange.Protocol.DP
         {
             await Task.Run(() =>
             {
-                _logger.LogTrace($"{this} send clean pak");
-
                 var pak = new PackageWithIndex(PackageCode.Clean)
                 {
                     Index = pakIndex
@@ -250,6 +248,8 @@ namespace D.FreeExchange.Protocol.DP
 
             if (pakInfo.Package.Code == PackageCode.Clean)
             {
+                _logger.LogInformation($"{this} 对面已经对 {pakIndex} 之后的部分包清理完成");
+
                 ContinueSending();
             }
 
@@ -299,12 +299,14 @@ namespace D.FreeExchange.Protocol.DP
         {
             return Task.Run(() =>
             {
-                var cleanCount = 0;
+                var cleanCount = 1;
 
                 SendCleanPak(_currIndex);
 
                 _currIndex++;
                 var toCleanIndex = _currIndex;
+
+                _logger.LogInformation($"{this} index {toCleanIndex} ~ ？ 将要使用，清理对应的旧包");
 
                 do
                 {
@@ -320,6 +322,8 @@ namespace D.FreeExchange.Protocol.DP
                     toCleanIndex = (toCleanIndex + 1) % _maxSendIndex;
                     cleanCount++;
                 } while (cleanCount < _core.Options.MaxPackageBuffer);
+
+                _logger.LogInformation($"{this} index {_currIndex} ~ {toCleanIndex - 1} 清理完成");
             });
         }
 
