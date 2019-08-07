@@ -19,7 +19,7 @@ namespace D.FreeExchange.Protocol.DP
         DateTimeOffset _lastHeartPackageTime;
         protected bool _lastCheckIsOnline;
 
-        TimeSpan _heartInterval;
+        TimeSpan _offlineSpan;
 
         public DProtocolHeart(
             ILogger logger
@@ -70,11 +70,11 @@ namespace D.FreeExchange.Protocol.DP
 
         protected void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
         {
-            _logger.LogInformation($"{this} 心跳间隔由 {_heartInterval.TotalSeconds} 跟新为 {e.Options.HeartInterval} (S)");
+            _logger.LogInformation($"{this} 心跳间隔由 {_offlineSpan.TotalSeconds / 2} 更新为 {e.Options.HeartInterval} (S)");
 
-            _heartInterval = TimeSpan.FromSeconds(e.Options.HeartInterval);
+            _offlineSpan = TimeSpan.FromSeconds(e.Options.HeartInterval * 2);
 
-            timer_heart.Interval = _heartInterval.TotalMilliseconds;
+            timer_heart.Interval = TimeSpan.FromSeconds(e.Options.HeartInterval).TotalMilliseconds;
         }
 
         protected abstract void InitHeartTimer();
@@ -89,7 +89,7 @@ namespace D.FreeExchange.Protocol.DP
         /// </summary>
         protected void CheckIsOnline()
         {
-            var isOnline = DateTimeOffset.Now - _lastHeartTime < _heartInterval;
+            var isOnline = DateTimeOffset.Now - _lastHeartTime < _offlineSpan;
 
             if (isOnline != _lastCheckIsOnline && !isOnline)
             {
