@@ -88,5 +88,10 @@ namespace D.FreeExchange.Protocol.DP
 
             return buffer;
         }
+
+        public override string ToString()
+        {
+            return $"package[{Code},{Index}]";
+        }
     }
 }

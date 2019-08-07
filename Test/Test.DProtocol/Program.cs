@@ -44,6 +44,8 @@ namespace Test.DProtocolT
             _client.Run(ExchangeProtocolRunningMode.Client);
             _server.Run(ExchangeProtocolRunningMode.Server);
 
+            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
+
             TestSimpleDP();
         }
 

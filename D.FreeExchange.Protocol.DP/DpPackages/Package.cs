@@ -124,5 +124,10 @@ namespace D.FreeExchange.Protocol.DP
                 HeadBuffer
             };
         }
+
+        public override string ToString()
+        {
+            return $"package[{Code}]";
+        }
     }
 }
