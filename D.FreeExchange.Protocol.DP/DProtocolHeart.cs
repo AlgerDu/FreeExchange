@@ -17,7 +17,7 @@ namespace D.FreeExchange.Protocol.DP
         protected Timer timer_heart;
         DateTimeOffset _lastHeartTime;
         DateTimeOffset _lastHeartPackageTime;
-        bool _lastCheckIsOnline;
+        protected bool _lastCheckIsOnline;
 
         TimeSpan _heartInterval;
 
@@ -63,7 +63,7 @@ namespace D.FreeExchange.Protocol.DP
             }
             else if (e.OldState == ProtocolState.Stop)
             {
-                timer_heart.Start();
+                StartTimer();
                 _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 开启心跳定时器");
             }
         }
@@ -79,6 +79,11 @@ namespace D.FreeExchange.Protocol.DP
 
         protected abstract void InitHeartTimer();
 
+        protected virtual void StartTimer()
+        {
+            timer_heart.Start();
+        }
+
         /// <summary>
         /// 检测一定时间内有无心跳包，来判定是否在线
         /// </summary>
@@ -86,17 +91,9 @@ namespace D.FreeExchange.Protocol.DP
         {
             var isOnline = DateTimeOffset.Now - _lastHeartTime < _heartInterval;
 
-            if (isOnline != _lastCheckIsOnline)
+            if (isOnline != _lastCheckIsOnline && !isOnline)
             {
-                if (isOnline)
-                {
-                    _core.ChangeState(ProtocolState.Connectting);
-                    _core.NotifyCmd(ExchangeProtocolCmd.BackOnline, DateTimeOffset.Now);
-                }
-                else
-                {
-                    _core.ChangeState(ProtocolState.Offline);
-                }
+                _core.ChangeState(ProtocolState.Offline);
             }
 
             _lastCheckIsOnline = isOnline;
@@ -143,6 +140,27 @@ namespace D.FreeExchange.Protocol.DP
             {
                 SendHeartPackage();
             };
+        }
+
+        protected override void StartTimer()
+        {
+            //客户端，定时器启动的同时就需要发送一次心跳包
+            SendHeartPackage();
+
+            base.StartTimer();
+        }
+
+        public override void DealHerat(IPackage package)
+        {
+            if (!_lastCheckIsOnline)
+            {
+                _lastCheckIsOnline = true;
+
+                _core.ChangeState(ProtocolState.Connectting);
+                _core.NotifyCmd(ExchangeProtocolCmd.BackOnline, DateTimeOffset.Now);
+            }
+
+            base.DealHerat(package);
         }
     }
 
