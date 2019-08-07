@@ -242,13 +242,18 @@ namespace D.FreeExchange
 
         public void RefreshOptions(DProtocolOptions options)
         {
-            _options = options;
-
-            OptionsChanged?.Invoke(this, new ProtocolOptionsChangedEventArgs
+            lock (this)
             {
-                Encoding = _encoding,
-                Options = _options
-            });
+                _logger.LogTrace($"{this} 刷新配置参数");
+
+                _options = options;
+
+                OptionsChanged?.Invoke(this, new ProtocolOptionsChangedEventArgs
+                {
+                    Encoding = _encoding,
+                    Options = _options
+                });
+            }
         }
 
         public Task SendPackage(IPackage pak)
@@ -264,7 +269,7 @@ namespace D.FreeExchange
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"{this} 在发送 package {pak.Code} 数据的过程中出现异常：{ex}");
+                    _logger.LogError($"{this} 在发送 {pak} 的过程中出现异常：{ex}");
                 }
             });
         }
