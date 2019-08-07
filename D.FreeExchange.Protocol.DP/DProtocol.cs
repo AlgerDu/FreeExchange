@@ -220,6 +220,8 @@ namespace D.FreeExchange
                 {
                     var buffer = pak.ToBuffer();
                     _sendBufferAction.Invoke(buffer, 0, buffer.Length);
+
+                    _logger.LogTrace($"{this} 发送 {pak}");
                 }
                 catch (Exception ex)
                 {

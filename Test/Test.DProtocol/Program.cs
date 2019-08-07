@@ -149,14 +149,9 @@ namespace Test.DProtocolT
                 logging.SetMinimumLevel(LogLevel.Trace);
             });
 
-            _options = new DProtocolOptions()
-            {
-                MaxPackageBuffer = 16
-            };
-
             service.Configure<DProtocolOptions>(option =>
             {
-                option = _options;
+                option.MaxPackageBuffer = 20;
             });
 
             builder.Populate(service);
