@@ -21,6 +21,29 @@ namespace D.FreeExchange
         //经过整理之后的这个类，其实只是一个外壳
         //想了下，觉得既是核心又是壳，会好写很多
 
+        static Dictionary<ProtocolState, IEnumerable<ProtocolState>> _stateChangeRules = new Dictionary<ProtocolState, IEnumerable<ProtocolState>>
+        {
+            { ProtocolState.Stop , new ProtocolState[]{
+                    ProtocolState.Offline
+                }
+            },
+            { ProtocolState.Offline , new ProtocolState[]{
+                    ProtocolState.Stop,
+                    ProtocolState.Connectting
+                }
+            },
+            { ProtocolState.Connectting , new ProtocolState[]{
+                    ProtocolState.Stop,
+                    ProtocolState.Online
+                }
+            },
+            { ProtocolState.Online , new ProtocolState[]{
+                    ProtocolState.Stop,
+                    ProtocolState.Offline
+                }
+            }
+        };
+
         ILogger _logger;
         DProtocolOptions _options;
 
@@ -157,18 +180,34 @@ namespace D.FreeExchange
 
         public void ChangeState(ProtocolState newState)
         {
-            //TODO 控制状态的转换，不能随意的变换
-            var oldState = _state;
-            _state = newState;
-
-            _logger.LogInformation($"{this} state {oldState} => {newState}");
-
-            StateChanged?.Invoke(this, new ProtocolStateChangedEventArgs
+            lock (this)
             {
-                OldState = oldState,
-                NewState = newState,
-                Time = DateTimeOffset.Now
-            });
+                if (_state == newState)
+                {
+                    _logger.LogWarning($"{this} 相同的状态不可以转换：{newState}");
+                    return;
+                }
+
+                var canChange = _stateChangeRules[_state].Where(ss => ss == newState).Count() == 1;
+
+                if (!canChange)
+                {
+                    _logger.LogWarning($"{this} {_state} 不能变换到 {newState} 状态");
+                    return;
+                }
+
+                var oldState = _state;
+                _state = newState;
+
+                _logger.LogInformation($"{this} {oldState} => {newState}");
+
+                StateChanged?.Invoke(this, new ProtocolStateChangedEventArgs
+                {
+                    OldState = oldState,
+                    NewState = newState,
+                    Time = DateTimeOffset.Now
+                });
+            }
         }
 
         public Task DealProtocolPayload(IProtocolPayload payload)
