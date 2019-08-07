@@ -81,7 +81,7 @@ namespace D.FreeExchange.Protocol.DP
             else if (e.OldState == ProtocolState.Connectting && e.NewState == ProtocolState.Online)
             {
                 //启动发送
-                StopReceiving();
+                StartReceiving();
             }
             else if (e.OldState == ProtocolState.Online && e.NewState == ProtocolState.Offline)
             {
@@ -157,17 +157,24 @@ namespace D.FreeExchange.Protocol.DP
             {
                 if (_lastCleanIndex != pak.Index)
                 {
+                    _logger.LogInformation($"{this} 开始清理接收缓存中 index {pak.Index + 1} 及其之后的部分包");
+
                     _lastCleanIndex = pak.Index;
 
                     var offset = 1;
+                    var toCleanIndex = pak.Index + 1;
 
-                    for (var i = pak.Index
+                    for (
                         ; offset < _maxPakBuffer
-                        ; i = (i + _maxReceiveIndex + 1) % _maxReceiveIndex)
+                        ; toCleanIndex = (toCleanIndex + _maxReceiveIndex + 1) % _maxReceiveIndex)
                     {
-                        _receivingPaks[i].State = PackageState.Empty;
-                        _receivingPaks[i].Package = null;
+                        _receivingPaks[toCleanIndex].State = PackageState.Empty;
+                        _receivingPaks[toCleanIndex].Package = null;
+
+                        offset++;
                     }
+
+                    _logger.LogInformation($"{this} 清理了 idnex {_lastCleanIndex + 1} ~ {toCleanIndex} 的包缓存");
                 }
             }
 

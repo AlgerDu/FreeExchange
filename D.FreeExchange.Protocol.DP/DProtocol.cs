@@ -341,23 +341,28 @@ namespace D.FreeExchange
             //每次收到都回复一次，停止掉对面的循环
             SendPackage(new ConnectOkPackage());
 
-            if (_state != ProtocolState.Connectting && _state != ProtocolState.Offline)
+            lock (this)
             {
-                return;
+                if (_state != ProtocolState.Connectting && _state != ProtocolState.Offline)
+                {
+                    return;
+                }
+
+                if (_runningMode == ExchangeProtocolRunningMode.Server)
+                {
+                    var connect = package as ConnectPackage;
+
+                    var connectData = connect.GetData(_encoding);
+
+                    RefreshOptions(connectData.Options);
+
+                    SendConnectPackage();
+
+                    ChangeState(ProtocolState.Connectting);
+                }
+
+                ChangeState(ProtocolState.Online);
             }
-
-            if (_runningMode == ExchangeProtocolRunningMode.Server)
-            {
-                var connect = package as ConnectPackage;
-
-                var connectData = connect.GetData(_encoding);
-
-                RefreshOptions(connectData.Options);
-
-                SendConnectPackage();
-            }
-
-            ChangeState(ProtocolState.Online);
         }
 
         /// <summary>
