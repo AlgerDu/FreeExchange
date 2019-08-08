@@ -62,7 +62,7 @@ namespace D.FreeExchange.Protocol.DP
                 StartTimer();
                 _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 开启心跳定时器");
             }
-            else
+            else if (e.OldState == ProtocolState.Online)
             {
                 timer_heart.Stop();
                 _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 停止心跳定时器");

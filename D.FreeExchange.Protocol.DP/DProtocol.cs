@@ -109,13 +109,14 @@ namespace D.FreeExchange
                         _heart = new DProtocolHeart_Client(_logger, this);
                         _connecte = new DProtocolConnecte_Client(_logger, this);
 
-                        RefreshOptions(_options);
                     }
                     else
                     {
                         _heart = new DProtocolHeart_Server(_logger, this);
                         _connecte = new DProtocolConnecte_Server(_logger, this);
                     }
+
+                    RefreshOptions(_options);
 
                     ChangeState(ProtocolState.Offline);
                 }
@@ -202,7 +203,7 @@ namespace D.FreeExchange
                 var oldState = _state;
                 _state = newState;
 
-                _logger.LogInformation($"{this} {oldState} => {newState}");
+                _logger.LogInformation($"{this} state {oldState} => {newState}");
 
                 StateChanged?.Invoke(this, new ProtocolStateChangedEventArgs
                 {

@@ -76,8 +76,11 @@ namespace D.FreeExchange.Protocol.DP
 
         protected virtual void DealConnectOK(IPackage package)
         {
-            if (_core.State == ProtocolState.Connectting)
-                _core.ChangeState(ProtocolState.Online);
+            lock (this)
+            {
+                if (_core.State == ProtocolState.Connectting)
+                    _core.ChangeState(ProtocolState.Online);
+            }
         }
 
         private void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
@@ -99,10 +102,14 @@ namespace D.FreeExchange.Protocol.DP
 
         protected virtual void StartConnecte()
         {
+            _logger.LogInformation($"{this} 开始尝试 connect");
+
             _currItemIndex = 0;
             _sendCount = 0;
 
             var item = _tryConnectSettings[_currItemIndex];
+
+            _canTryCount = item.TryCount;
 
             timer_ContinueSendingConnectPak.Interval = item.Interval.TotalMilliseconds;
 
@@ -113,8 +120,13 @@ namespace D.FreeExchange.Protocol.DP
 
         protected virtual void StopConnecte()
         {
-            _continueSendingConnectPak = false;
-            timer_ContinueSendingConnectPak.Stop();
+            if (_continueSendingConnectPak)
+            {
+                _logger.LogInformation($"{this} 停止连接 connect");
+
+                _continueSendingConnectPak = false;
+                timer_ContinueSendingConnectPak.Stop();
+            }
         }
 
         private void InitTimer()
@@ -182,25 +194,37 @@ namespace D.FreeExchange.Protocol.DP
 
         protected override void DealConnect(IPackage package)
         {
+            lock (this)
+            {
+                if (_core.State == ProtocolState.Connectting)
+                {
+                    //说明正在处理连接包，对重复的包不做任何处理
+                    return;
+                }
+                else if (_core.State == ProtocolState.Online)
+                {
+                    //服务端已经开始运行了，直接回复
+                    SendConnectOKPackage();
+                    return;
+                }
+
+                var connectPak = package as ConnectPackage;
+                var data = connectPak.GetData(_encoding);
+
+                _core.RefreshOptions(data.Options);
+
+                _core.ChangeState(ProtocolState.Connectting);
+            }
+        }
+
+        protected override void DealConnectOK(IPackage package)
+        {
             if (_core.State == ProtocolState.Connectting)
             {
-                //说明正在处理连接包，对重复的包不做任何处理
-                return;
-            }
-            else if (_core.State == ProtocolState.Online)
-            {
-                //服务端已经开始运行了，直接回复
                 SendConnectOKPackage();
-                return;
             }
 
-            _core.ChangeState(ProtocolState.Connectting);
-
-            var connectPak = package as ConnectPackage;
-
-            var data = connectPak.GetData(_encoding);
-
-            _core.RefreshOptions(data.Options);
+            base.DealConnectOK(package);
         }
 
         protected override void SendConnectPackage()
@@ -225,14 +249,6 @@ namespace D.FreeExchange.Protocol.DP
             ILogger logger
             , IProtocolCore core
             ) : base(logger, core)
-        {
-        }
-
-        protected override void StartConnecte()
-        {
-        }
-
-        protected override void StopConnecte()
         {
         }
 
