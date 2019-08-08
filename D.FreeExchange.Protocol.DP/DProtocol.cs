@@ -21,7 +21,7 @@ namespace D.FreeExchange
         //经过整理之后的这个类，其实只是一个外壳
         //想了下，觉得既是核心又是壳，会好写很多
 
-        static Dictionary<ProtocolState, IEnumerable<ProtocolState>> _stateChangeRules = new Dictionary<ProtocolState, IEnumerable<ProtocolState>>
+        readonly Dictionary<ProtocolState, IEnumerable<ProtocolState>> _stateChangeRules = new Dictionary<ProtocolState, IEnumerable<ProtocolState>>
         {
             { ProtocolState.Stop , new ProtocolState[]{
                     ProtocolState.Offline
@@ -278,46 +278,6 @@ namespace D.FreeExchange
 
         protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
         {
-            if (e.NewState == ProtocolState.Offline && _runningMode == ExchangeProtocolRunningMode.Client)
-            {
-            }
-            else if (e.NewState == ProtocolState.Connectting)
-            {
-                SendConnectPackage();
-            }
-        }
-
-        private async void SendConnectPackage()
-        {
-            await Task.Run(() =>
-            {
-                lock (this)
-                {
-                    _needSendConnectingPak = true;
-                }
-
-                //当没有收到连接OK包的时候，要一直重复发送
-                while (_needSendConnectingPak)
-                {
-                    var package = new ConnectPackage();
-
-                    var connectData = new ConnectPackageData
-                    {
-                        Uid = _uid
-                    };
-
-                    if (_runningMode == ExchangeProtocolRunningMode.Client)
-                    {
-                        connectData.Options = _options;
-                    }
-
-                    package.SetData(connectData, _encoding);
-
-                    SendPackage(package);
-
-                    System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(50));
-                }
-            });
         }
 
         /// <summary>
@@ -374,51 +334,6 @@ namespace D.FreeExchange
                         break;
                 }
             });
-        }
-
-        /// <summary>
-        /// 处理连接包
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealConnect(IPackage package)
-        {
-            //每次收到都回复一次，停止掉对面的循环
-            SendPackage(new ConnectOkPackage());
-
-            lock (this)
-            {
-                if (_state != ProtocolState.Connectting && _state != ProtocolState.Offline)
-                {
-                    return;
-                }
-
-                if (_runningMode == ExchangeProtocolRunningMode.Server)
-                {
-                    var connect = package as ConnectPackage;
-
-                    var connectData = connect.GetData(_encoding);
-
-                    RefreshOptions(connectData.Options);
-
-                    SendConnectPackage();
-
-                    ChangeState(ProtocolState.Connectting);
-                }
-
-                ChangeState(ProtocolState.Online);
-            }
-        }
-
-        /// <summary>
-        /// 处理连接成功
-        /// </summary>
-        /// <param name="package"></param>
-        private void DealConnectOK(IPackage package)
-        {
-            lock (this)
-            {
-                _needSendConnectingPak = false;
-            }
         }
     }
 }
