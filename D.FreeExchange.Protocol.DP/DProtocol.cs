@@ -54,6 +54,7 @@ namespace D.FreeExchange
         IPayloadAnalyser _payloadAnalyser;
         IPackageFactory _pakFactory;
 
+        IProtocolConnecte _connecte;
         IProtocolHeart _heart;
         IProtocolSend _send;
         IProtocolReceive _receive;
@@ -106,12 +107,14 @@ namespace D.FreeExchange
                     if (mode == ExchangeProtocolRunningMode.Client)
                     {
                         _heart = new DProtocolHeart_Client(_logger, this);
+                        _connecte = new DProtocolConnecte_Client(_logger, this);
 
                         RefreshOptions(_options);
                     }
                     else
                     {
                         _heart = new DProtocolHeart_Server(_logger, this);
+                        _connecte = new DProtocolConnecte_Server(_logger, this);
                     }
 
                     ChangeState(ProtocolState.Offline);
@@ -278,6 +281,10 @@ namespace D.FreeExchange
 
         protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
         {
+            if (e.NewState == ProtocolState.Offline && _runningMode == ExchangeProtocolRunningMode.Client)
+            {
+                ChangeState(ProtocolState.Connectting);
+            }
         }
 
         /// <summary>
@@ -307,11 +314,8 @@ namespace D.FreeExchange
                 switch (pakage.Code)
                 {
                     case PackageCode.Connect:
-                        DealConnect(pakage);
-                        break;
-
                     case PackageCode.ConnectOK:
-                        DealConnectOK(pakage);
+                        _connecte.DealPackage(pakage);
                         break;
 
                     case PackageCode.Heart:

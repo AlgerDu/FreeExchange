@@ -50,21 +50,22 @@ namespace D.FreeExchange.Protocol.DP
             }
             else
             {
+                _lastHeartPackageTime = heart.HeartTime;
                 _lastHeartTime = DateTimeOffset.Now;
             }
         }
 
         protected void OnStateChanged(object sender, ProtocolStateChangedEventArgs e)
         {
-            if (e.NewState == ProtocolState.Closing || e.NewState == ProtocolState.Stop)
-            {
-                timer_heart.Stop();
-                _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 停止心跳定时器");
-            }
-            else if (e.OldState == ProtocolState.Stop)
+            if (e.NewState == ProtocolState.Online)
             {
                 StartTimer();
                 _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 开启心跳定时器");
+            }
+            else
+            {
+                timer_heart.Stop();
+                _logger.LogTrace($"{this} 由状态 {e.OldState} => {e.NewState} 停止心跳定时器");
             }
         }
 
@@ -148,19 +149,6 @@ namespace D.FreeExchange.Protocol.DP
             SendHeartPackage();
 
             base.StartTimer();
-        }
-
-        public override void DealHerat(IPackage package)
-        {
-            if (!_lastCheckIsOnline)
-            {
-                _lastCheckIsOnline = true;
-
-                _core.ChangeState(ProtocolState.Connectting);
-                _core.NotifyCmd(ExchangeProtocolCmd.BackOnline, DateTimeOffset.Now);
-            }
-
-            base.DealHerat(package);
         }
     }
 

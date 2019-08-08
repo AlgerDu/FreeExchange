@@ -45,6 +45,11 @@ namespace D.FreeExchange.Protocol.DP
             InitTimer();
         }
 
+        public override string ToString()
+        {
+            return $"{_core}";
+        }
+
         #region IProtocolConnecte 实现
         public void DealPackage(IPackage package)
         {
