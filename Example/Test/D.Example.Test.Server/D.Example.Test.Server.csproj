@@ -1,8 +1,21 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RootNamespace>D.Example.Test</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="D.Extensions.Application.Autofac" Version="1.0.0" />
+    <PackageReference Include="D.Infrastructures.Application" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\D.FreeExchange.Core\D.FreeExchange.Core.csproj" />
+    <ProjectReference Include="..\..\..\D.FreeExchange.Protocol.DP\D.FreeExchange.Protocol.DP.csproj" />
+    <ProjectReference Include="..\..\..\D.FreeExchange.Transporter.Udp\D.FreeExchange.Transporter.Udp.csproj" />
+  </ItemGroup>
 
 </Project>
