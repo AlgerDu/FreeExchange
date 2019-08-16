@@ -23,10 +23,10 @@ namespace D.Example.Test
                 .Builde<TestServerApp>();
 
             app.Run();
-            System.Console.ReadKey();
+            Console.ReadKey();
 
             app.Stop();
-            System.Console.ReadKey();
+            Console.ReadKey();
         }
     }
 }
