@@ -1,5 +1,7 @@
 ﻿using D.Infrastructures;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
 using System;
 using System.IO;
 
@@ -17,7 +19,8 @@ namespace D.Example.Test
                 })
                 .ConfigureLogging(logging =>
                 {
-                    //logging.AddConsole();
+                    logging.AddConsole();
+                    logging.AddNLog();
                 })
                 .UseStartupWithAutofac<Startup>()
                 .Builde<TestServerApp>();
