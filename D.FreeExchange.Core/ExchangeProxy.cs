@@ -12,7 +12,7 @@ namespace D.FreeExchange.Core
     public abstract class ExchangeProxy : IExchangeProxy
     {
         protected ILogger _logger;
-        protected IProtocolBuilder _protocol;
+        protected IExchangeProtocol _protocol;
         protected IActionExecutor _executor;
         protected ITransporter _transporter;
 

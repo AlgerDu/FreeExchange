@@ -36,8 +36,8 @@ namespace D.FreeExchange
                 .As<ITransporter>()
                 .AsSelf();
 
-            builder.RegisterType<DProtocolBuilder>()
-                .As<IProtocolBuilder>()
+            builder.RegisterType<DProtocol>()
+                .As<DProtocol>()
                 .AsSelf();
         }
 

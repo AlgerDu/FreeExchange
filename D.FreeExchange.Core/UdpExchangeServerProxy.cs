@@ -13,7 +13,7 @@ namespace D.FreeExchange.Core
     {
         public UdpExchangeServerProxy(
             ILogger<UdpExchangeServerProxy> logger
-            , IProtocolBuilder protocol
+            , IExchangeProtocol protocol
             , IActionExecutor executor
             ) : base(logger)
         {

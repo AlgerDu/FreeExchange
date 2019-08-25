@@ -18,7 +18,7 @@ namespace D.FreeExchange.Core
         public ExchangeClientProxy(
             ILogger<ExchangeClientProxy> logger
             , ITransporter transporter
-            , IProtocolBuilder protocol
+            , IExchangeProtocol protocol
             , IActionExecutor executor
             ) : base(logger)
         {

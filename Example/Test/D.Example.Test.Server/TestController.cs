@@ -18,9 +18,10 @@ namespace D.Example.Test
             _logger = logger;
         }
 
-        public IResult<string> EchoMessage(string msg)
+        public IResult SendMessage(string msg)
         {
-            return Result.CreateSuccess<string>(msg);
+
+            return Result.CreateSuccess();
         }
     }
 }
