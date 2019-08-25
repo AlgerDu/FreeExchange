@@ -15,7 +15,7 @@ namespace D.Example.Test
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     config.SetBasePath(Directory.GetCurrentDirectory());
-                    //config.AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
+                    config.AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureLogging(logging =>
                 {
