@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using D.FreeExchange;
 using D.Infrastructures;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,13 @@ namespace D.Example.Test
 
         public void ConfigOptions(IServiceCollection services)
         {
+            services.Configure<ServerHostOptions>(_config.GetSection("ServerHost"));
+
+            services.Configure<DProtocolOptions>((options) =>
+            {
+                options.MaxPackageBuffer = 64;
+                options.MaxPayloadDataLength = 2048;
+            });
         }
 
         public void ConfigServices(IServiceCollection services)
@@ -36,6 +44,7 @@ namespace D.Example.Test
 
         public void ConfigServices(ContainerBuilder builder)
         {
+            builder.AddFreeExchangeCore();
         }
     }
 }
