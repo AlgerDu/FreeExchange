@@ -65,10 +65,9 @@ namespace D.FreeExchange
         Encoding _encoding;
         string _uid;
 
-        bool _needSendConnectingPak;
-
         public DProtocol(
             ILogger<DProtocol> logger
+            , ExchangeProtocolRunningMode runningMode
             , IOptions<DProtocolOptions> options
             )
         {
@@ -77,6 +76,7 @@ namespace D.FreeExchange
 
             _logger = logger;
             _options = options.Value;
+            _runningMode = runningMode;
 
             _payloadAnalyser = new PayloadAnalyser(logger, this);
             _pakFactory = new PackageFactory();
@@ -85,7 +85,6 @@ namespace D.FreeExchange
             _receive = new DProtocoloReceive(logger, this);
 
             _state = ProtocolState.Stop;
-            _needSendConnectingPak = false;
 
             StateChanged += new ProtocolStateChangedEventHandler(OnStateChanged);
         }
@@ -96,15 +95,13 @@ namespace D.FreeExchange
         }
 
         #region IExchangeProtocol 实现
-        public Task<IResult> Run(ExchangeProtocolRunningMode mode)
+        public Task<IResult> Run()
         {
             return Task.Run<IResult>(() =>
             {
                 lock (this)
                 {
-                    _runningMode = mode;
-
-                    if (mode == ExchangeProtocolRunningMode.Client)
+                    if (_runningMode == ExchangeProtocolRunningMode.Client)
                     {
                         _heart = new DProtocolHeart_Client(_logger, this);
                         _connecte = new DProtocolConnecte_Client(_logger, this);

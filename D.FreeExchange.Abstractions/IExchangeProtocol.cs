@@ -14,9 +14,8 @@ namespace D.FreeExchange
         /// <summary>
         /// 启动运行
         /// </summary>
-        /// <param name="mode">以哪种模式运行</param>
         /// <returns></returns>
-        Task<IResult> Run(ExchangeProtocolRunningMode mode);
+        Task<IResult> Run();
 
         /// <summary>
         /// 停止运行，清理所有的缓存
