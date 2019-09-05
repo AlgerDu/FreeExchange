@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 
 Example/Test/D.Example.Test.Server/appSettings.json
+Example/Test/D.Example.Test.Client/appSettings.json
