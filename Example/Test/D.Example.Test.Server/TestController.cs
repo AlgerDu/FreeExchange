@@ -20,7 +20,7 @@ namespace D.Example.Test
 
         public IResult SendMessage(string msg)
         {
-
+            _logger.LogInformation($"接收到消息 {msg}");
             return Result.CreateSuccess();
         }
     }

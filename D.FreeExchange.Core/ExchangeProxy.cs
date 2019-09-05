@@ -9,6 +9,9 @@ using Newtonsoft.Json;
 
 namespace D.FreeExchange.Core
 {
+    /// <summary>
+    /// 代理基类
+    /// </summary>
     public abstract class ExchangeProxy : IExchangeProxy
     {
         protected ILogger _logger;
@@ -103,7 +106,7 @@ namespace D.FreeExchange.Core
         public virtual IResult Run()
         {
             _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
-            _protocol.SetReceivedControlAction(this.ProtocolReceiveControl);
+            _protocol.SetReceivedCmdAction(this.ProtocolReceiveControl);
             _protocol.SetSendBufferAction(this.SendBufferAction);
 
             _transporter.SetReceiveAction(this.TransporterReceivedBuffer);
@@ -121,7 +124,7 @@ namespace D.FreeExchange.Core
             _protocol.PushBuffer(buffer, offset, length);
         }
 
-        private void ProtocolReceiveControl(int ctlCode)
+        private void ProtocolReceiveControl(int cmd, DateTimeOffset time)
         {
 
         }

@@ -60,5 +60,15 @@ namespace D.FreeExchange
                 , new TypedParameter(typeof(UdpClient), client)
                 );
         }
+
+        public static DProtocol ResolveDProtocol(
+            this IComponentContext context
+            , ExchangeProtocolRunningMode mode
+            )
+        {
+            return context.Resolve<DProtocol>(
+                new TypedParameter(typeof(ExchangeProtocolRunningMode), mode)
+                );
+        }
     }
 }

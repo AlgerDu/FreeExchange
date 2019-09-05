@@ -114,9 +114,12 @@ namespace D.FreeExchange.Core
         {
             var transpoter = _scope.ResolveUdpClientProxyTransporter(endPoint, _server);
 
+            var protocol = _scope.ResolveDProtocol(ExchangeProtocolRunningMode.Server);
+
             var client = _scope.Resolve<ExchangeClientProxy>(
                 new TypedParameter(typeof(IPEndPoint), endPoint)
                 , new TypedParameter(typeof(ITransporter), transpoter)
+                , new TypedParameter(typeof(IExchangeProtocol), transpoter)
                 );
 
             client.Run();
