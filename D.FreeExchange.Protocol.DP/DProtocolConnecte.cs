@@ -85,6 +85,7 @@ namespace D.FreeExchange.Protocol.DP
 
         private void OnOptionsChanged(object sender, ProtocolOptionsChangedEventArgs e)
         {
+            _logger.LogTrace($"{this} deal options changed event");
             _encoding = e.Encoding;
         }
 
