@@ -24,6 +24,7 @@ namespace D.Example.Test
             , ILifetimeScope scope
             )
         {
+            _logger = logger;
             _options = options.Value;
 
             _server = scope.Resolve<UdpExchangeServer>(new TypedParameter(typeof(int), _options.ListenPort));
@@ -31,6 +32,7 @@ namespace D.Example.Test
 
         public void Run()
         {
+            _logger.LogInformation($"ExchangeServerHost start running at {_options.ListenPort}");
             _server.Run();
         }
 

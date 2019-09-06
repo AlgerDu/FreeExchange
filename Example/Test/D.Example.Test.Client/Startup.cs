@@ -31,6 +31,12 @@ namespace D.Example.Test
         {
             services.Configure<ServerProxyOptions>(_config.GetSection("Server"));
 
+            services.Configure<MvcActionExecutorOptions>((options) =>
+            {
+                options.AssemblyNames = new string[] { "D.Example.Test.Client" };
+                options.Namespaces = new string[] { "D.Example.Test" };
+            });
+
             services.Configure<DProtocolOptions>((options) =>
             {
                 options.MaxPackageBuffer = 64;

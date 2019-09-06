@@ -69,7 +69,12 @@ namespace D.FreeExchange
             var ipstr = arr[0];
             var port = Convert.ToInt32(arr[1]);
 
-            var ipa = IPAddress.Parse(ipstr);
+            var ipa = IPAddress.Loopback;
+
+            if (ipstr.ToLower() != "localhost")
+            {
+                ipa = IPAddress.Parse(ipstr);
+            }
             _sender = new IPEndPoint(ipa, port);
 
             _client = new UdpClient();

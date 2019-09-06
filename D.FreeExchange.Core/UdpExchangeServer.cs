@@ -74,6 +74,7 @@ namespace D.FreeExchange.Core
 
         private IResult StartServer()
         {
+            // TODO 异常检测
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, _listenPort);
             _server = new UdpClient(ipep);
             _server.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -119,7 +120,7 @@ namespace D.FreeExchange.Core
             var client = _scope.Resolve<ExchangeClientProxy>(
                 new TypedParameter(typeof(IPEndPoint), endPoint)
                 , new TypedParameter(typeof(ITransporter), transpoter)
-                , new TypedParameter(typeof(IExchangeProtocol), transpoter)
+                , new TypedParameter(typeof(IExchangeProtocol), protocol)
                 );
 
             client.Run();

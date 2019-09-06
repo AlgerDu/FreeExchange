@@ -22,6 +22,8 @@ namespace D.Example.Test
 
         public IApplication Run()
         {
+            _logger.LogInformation($"TestServerApp start running");
+
             _host.Run();
 
             return this;

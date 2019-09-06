@@ -37,7 +37,7 @@ namespace D.FreeExchange.Core
 
         public MvcActionExecutor(
             ILogger<MvcActionExecutor> logger
-            , IOptions<MvcActionExecutorOptions> options
+            , IOptionsSnapshot<MvcActionExecutorOptions> options
             , ILifetimeScope scope
             )
         {

@@ -25,6 +25,8 @@ namespace D.Example.Test
 
         public IApplication Run()
         {
+            _logger.LogInformation($"{this} start running");
+
             _server.Connect();
 
             TestSend();
@@ -42,6 +44,8 @@ namespace D.Example.Test
             Task.Run(() =>
             {
                 System.Threading.Thread.Sleep(2000);
+
+                _logger.LogInformation($"开始尝试调用接口 Test/SendMessage");
 
                 _server.SendAsync<Result>(new ExchangeMessage
                 {

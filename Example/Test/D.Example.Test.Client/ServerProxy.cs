@@ -24,6 +24,8 @@ namespace D.Example.Test
             _logger = logger;
             _options = options.Value;
             _scope = scope;
+
+            CreateProxy();
         }
 
         private void CreateProxy()
@@ -33,10 +35,12 @@ namespace D.Example.Test
             var protocol = _scope.ResolveDProtocol(ExchangeProtocolRunningMode.Client);
 
             var proxy = _scope.Resolve<UdpExchangeServerProxy>(
-                new TypedParameter(typeof(IExchangeProtocol), transpoter)
+                new TypedParameter(typeof(IExchangeProtocol), protocol)
                 );
 
-            proxy.UpdateTransporter(transpoter);
+
+            UpdateRealServerProxy(proxy);
+            UpdateTransporter(transpoter);
         }
     }
 }
