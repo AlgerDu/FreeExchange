@@ -29,13 +29,7 @@ namespace D.Example.Test
 
         public void ConfigOptions(IServiceCollection services)
         {
-            services.Configure<ServerHostOptions>(_config.GetSection("ServerHost"));
-
-            services.Configure<MvcActionExecutorOptions>((options) =>
-            {
-                options.AssemblyNames = new string[] { "D.Example.Test.Server" };
-                options.Namespaces = new string[] { "D.Example.Test" };
-            });
+            services.Configure<ServerProxyOptions>(_config.GetSection("Server"));
 
             services.Configure<DProtocolOptions>((options) =>
             {
@@ -46,7 +40,7 @@ namespace D.Example.Test
 
         public void ConfigServices(IServiceCollection services)
         {
-            services.AddSingleton<ExchangeServerHost>();
+            services.AddSingleton<ServerProxy>();
         }
 
         public void ConfigServices(ContainerBuilder builder)
