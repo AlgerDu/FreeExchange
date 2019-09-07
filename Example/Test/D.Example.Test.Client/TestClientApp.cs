@@ -25,6 +25,7 @@ namespace D.Example.Test
 
         public IApplication Run()
         {
+            _logger.LogInformation($"==============================================================");
             _logger.LogInformation($"{this} start running");
 
             _server.Connect();

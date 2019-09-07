@@ -22,6 +22,7 @@ namespace D.Example.Test
 
         public IApplication Run()
         {
+            _logger.LogInformation($"==============================================================");
             _logger.LogInformation($"TestServerApp start running");
             _logger.LogTrace($"trace TestServerApp start running");
 
