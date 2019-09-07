@@ -56,7 +56,8 @@ namespace D.Example.Test
                 })
                 .ContinueWith((r) =>
                 {
-                    _logger.LogInformation($"尝试调用接口结果：{r}");
+
+                    _logger.LogInformation($"尝试调用接口结果：{r.Result}");
                 });
             });
         }

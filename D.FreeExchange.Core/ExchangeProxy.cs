@@ -64,6 +64,7 @@ namespace D.FreeExchange.Core
                 {
                     if (cache.State <= ExchangeMessageState.Sending)
                     {
+                        _logger.LogTrace($"{this} {cache.Uid} 发送超时 {cache.Timeout}");
                         return CreateErrorResult<T>((int)ExchangeCode.SentTimeout);
                     }
                     else
@@ -79,6 +80,7 @@ namespace D.FreeExchange.Core
                 {
                     if (cache.State <= ExchangeMessageState.ProcessTimeout)
                     {
+                        _logger.LogTrace($"{this} {cache.Uid} 接收超时 {cache.Timeout}");
                         return CreateErrorResult<T>((int)ExchangeCode.ReceivceTimeout);
                     }
                 }
@@ -160,12 +162,14 @@ namespace D.FreeExchange.Core
 
         private void DealSendingMsg(ExchangeMessageForPayload msg)
         {
+            _logger.LogTrace($"{this} 接收到请求 {msg.Uid} {msg.Url}");
+
             SendRecevieResponse(msg);
 
             var executeRst = _executor.InvokeAction(new ActionExecuteMessage
             {
                 Url = msg.Url,
-                Params = new object[] { msg.ResponseJsonStr },
+                Params = msg.RequestJsonStrs,
                 Timeout = msg.Timeout.HasValue ? msg.Timeout.Value : TimeSpan.FromMinutes(1)
             });
 
@@ -183,7 +187,7 @@ namespace D.FreeExchange.Core
             else
             {
                 response.Code = ExchangeCode.ActionExecuteError;
-                response.State = ExchangeMessageState.Processing;
+                response.State = ExchangeMessageState.Complete;
                 response.Uid = msg.Uid;
                 response.Msg = executeRst.Msg;
             }
@@ -193,6 +197,8 @@ namespace D.FreeExchange.Core
 
         private void DealReceviedMsg(ExchangeMessageForPayload msg)
         {
+            _logger.LogInformation($"{this} 消息 {msg.Uid} 对方已经收到");
+
             if (_sendMsgCaches.ContainsKey(msg.Uid.Value))
             {
                 var cache = _sendMsgCaches[msg.Uid.Value];
@@ -207,6 +213,8 @@ namespace D.FreeExchange.Core
 
         private void DealCompleteMsg(ExchangeMessageForPayload msg)
         {
+            _logger.LogInformation($"{this} 消息 {msg.Uid} 对方已经处理完成");
+
             if (_sendMsgCaches.ContainsKey(msg.Uid.Value))
             {
                 var cache = _sendMsgCaches[msg.Uid.Value];
@@ -239,12 +247,19 @@ namespace D.FreeExchange.Core
 
         #endregion
 
+        /// <summary>
+        /// 将请求参数封装为 json 数据
+        /// TODO byte[] 型数据尚未处理
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
         private ExchangeMessageCache AnalyseRequestAndCache(IExchangeMessage msg)
         {
             var cache = new ExchangeMessageCache()
             {
                 Timeout = msg.Timeout,
-                Url = msg.Url
+                Url = msg.Url,
+                State = ExchangeMessageState.Create
             };
 
             List<string> jsons = new List<string>(msg.Params.Length);
@@ -255,6 +270,8 @@ namespace D.FreeExchange.Core
             }
 
             cache.RequestJsonStrs = jsons.ToArray();
+
+            _logger.LogTrace($"{this} 创建请求 {cache.Uid} {cache.Url}，参数个数 {cache.RequestJsonStrs.Length}");
 
             _sendMsgCaches.Add(cache.Uid.Value, cache);
 
@@ -268,21 +285,24 @@ namespace D.FreeExchange.Core
 
         private Task<IResult> SendMsg(ExchangeMessageForPayload msg)
         {
-            var tmp = new ExchangeMessageForPayload
-            {
-                Url = msg.Url,
-                Uid = msg.Uid,
-                RequestJsonStrs = msg.RequestJsonStrs,
-                State = msg.State,
-                Timestamp = msg.Timestamp
-            };
+            //var tmp = new ExchangeMessageForPayload
+            //{
+            //    Url = msg.Url,
+            //    Uid = msg.Uid,
+            //    RequestJsonStrs = msg.RequestJsonStrs,
+            //    ResponseJsonStr = msg.ResponseJsonStr,
+            //    State = msg.State,
+            //    Timestamp = msg.Timestamp
+            //};
 
-            var jsonStr = JsonConvert.SerializeObject(tmp);
+            var jsonStr = JsonConvert.SerializeObject(msg);
 
             var payload = new ProtocolPayload
             {
                 Text = jsonStr
             };
+
+            _logger.LogTrace($"SendMsg {msg.Uid} {msg.State}");
 
             return _protocol.PushPayload(payload);
         }
@@ -297,7 +317,8 @@ namespace D.FreeExchange.Core
                 Url = cache.Url,
                 RequestJsonStrs = cache.RequestJsonStrs,
                 ByteDescriptions = cache.ByteDescriptions,
-                State = cache.State
+                State = cache.State,
+                Timeout = cache.Timeout
             };
 
             var proRst = await SendMsg(msg);
