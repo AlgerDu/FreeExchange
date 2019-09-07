@@ -292,7 +292,8 @@ namespace D.FreeExchange.Core
             //    RequestJsonStrs = msg.RequestJsonStrs,
             //    ResponseJsonStr = msg.ResponseJsonStr,
             //    State = msg.State,
-            //    Timestamp = msg.Timestamp
+            //    Timestamp = msg.Timestamp,
+            //    Timeout = msg.Timeout
             //};
 
             var jsonStr = JsonConvert.SerializeObject(msg);
@@ -311,12 +312,12 @@ namespace D.FreeExchange.Core
         {
             cache.State = ExchangeMessageState.Sending;
 
-            var msg = new ExchangeMessageCache
+            var msg = new ExchangeMessageForPayload
             {
                 Uid = cache.Uid,
                 Url = cache.Url,
                 RequestJsonStrs = cache.RequestJsonStrs,
-                ByteDescriptions = cache.ByteDescriptions,
+                //ByteDescriptions = cache.ByteDescriptions,
                 State = cache.State,
                 Timeout = cache.Timeout
             };
