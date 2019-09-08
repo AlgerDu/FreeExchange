@@ -269,6 +269,8 @@ namespace D.FreeExchange.Core
                 jsons.Add(JsonConvert.SerializeObject(p));
             }
 
+            //TODO 解析参数中的字节部分
+
             cache.RequestJsonStrs = jsons.ToArray();
 
             _logger.LogTrace($"{this} 创建请求 {cache.Uid} {cache.Url}，参数个数 {cache.RequestJsonStrs.Length}");
@@ -285,23 +287,15 @@ namespace D.FreeExchange.Core
 
         private Task<IResult> SendMsg(ExchangeMessageForPayload msg)
         {
-            //var tmp = new ExchangeMessageForPayload
-            //{
-            //    Url = msg.Url,
-            //    Uid = msg.Uid,
-            //    RequestJsonStrs = msg.RequestJsonStrs,
-            //    ResponseJsonStr = msg.ResponseJsonStr,
-            //    State = msg.State,
-            //    Timestamp = msg.Timestamp,
-            //    Timeout = msg.Timeout
-            //};
-
-            var jsonStr = JsonConvert.SerializeObject(msg);
-
             var payload = new ProtocolPayload
             {
-                Text = jsonStr
+                Bytes = msg.ByteDescriptions
             };
+
+            msg.ByteDescriptions = null;
+            var jsonStr = JsonConvert.SerializeObject(msg);
+
+            payload.Text = jsonStr;
 
             _logger.LogTrace($"SendMsg {msg.Uid} {msg.State}");
 
@@ -317,7 +311,7 @@ namespace D.FreeExchange.Core
                 Uid = cache.Uid,
                 Url = cache.Url,
                 RequestJsonStrs = cache.RequestJsonStrs,
-                //ByteDescriptions = cache.ByteDescriptions,
+                ByteDescriptions = cache.ByteDescriptions,
                 State = cache.State,
                 Timeout = cache.Timeout
             };

@@ -10,16 +10,12 @@ namespace D.FreeExchange.Core
     {
         public TaskCompletionSource<IResult> TCS { get; set; }
 
-        public List<IByteDescription> ByteDescriptions { get; set; }
-
         public ExchangeMessageCache()
         {
             Uid = Guid.NewGuid();
             State = ExchangeMessageState.Create;
             TCS = new TaskCompletionSource<IResult>();
             Timestamp = DateTimeOffset.Now;
-
-            ByteDescriptions = new List<IByteDescription>();
         }
     }
 
@@ -42,5 +38,7 @@ namespace D.FreeExchange.Core
         public string ResponseJsonStr { get; set; }
 
         public TimeSpan? Timeout { get; set; }
+
+        public List<IByteDescription> ByteDescriptions { get; set; }
     }
 }
