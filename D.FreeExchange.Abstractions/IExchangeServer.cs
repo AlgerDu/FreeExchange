@@ -7,10 +7,19 @@ using System.Threading.Tasks;
 namespace D.FreeExchange
 {
     /// <summary>
+    /// ExchangeClient 连入
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void ExchangeClientConnecttedEventHandler(object sender, ExchangeClientConnecttedEventArgs e);
+
+    /// <summary>
     /// 服务
     /// </summary>
     public interface IExchangeServer
     {
+        event ExchangeClientConnecttedEventHandler ClientConnectted;
+
         /// <summary>
         /// 所有连入的客户端代理
         /// </summary>
