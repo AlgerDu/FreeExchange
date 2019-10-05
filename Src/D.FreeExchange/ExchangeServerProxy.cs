@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using D.Utils;
 
-namespace D.FreeExchange.Core
+namespace D.FreeExchange
 {
     /// <summary>
     /// 

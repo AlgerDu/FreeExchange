@@ -7,7 +7,7 @@ using D.Utils;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace D.FreeExchange.Core
+namespace D.FreeExchange
 {
     /// <summary>
     /// 代理基类

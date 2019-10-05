@@ -9,7 +9,7 @@ using Autofac;
 using D.Utils;
 using Microsoft.Extensions.Logging;
 
-namespace D.FreeExchange.Core
+namespace D.FreeExchange.Udp
 {
     public class ClientCache
     {

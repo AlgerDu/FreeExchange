@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace D.FreeExchange.Core
+namespace D.FreeExchange
 {
     public class ExchangeMessageCache : ExchangeMessageForPayload
     {

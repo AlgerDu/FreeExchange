@@ -5,4 +5,13 @@
     <RootNamespace>D.FreeExchange</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="D.Utils.Result" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\D.FreeExchange.Abstractions\D.FreeExchange.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>
