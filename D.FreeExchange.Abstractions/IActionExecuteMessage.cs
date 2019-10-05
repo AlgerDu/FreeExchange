@@ -8,6 +8,8 @@ namespace D.FreeExchange
     {
         IExchangeProxy Proxy { get; }
 
+        object Response { get; }
+
         IEnumerable<IByteDescription> ByteDescriptions { get; }
     }
 }
