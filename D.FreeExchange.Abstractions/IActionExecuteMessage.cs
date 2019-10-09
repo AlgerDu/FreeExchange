@@ -4,12 +4,39 @@ using System.Text;
 
 namespace D.FreeExchange
 {
-    public interface IActionExecuteMessage : IExchangeMessage
+    /// <summary>
+    /// 思考了很久，觉得还是这样比较好
+    /// </summary>
+    public interface IActionExecuteMessage
     {
+        /// <summary>
+        /// 请求的路由
+        /// </summary>
+        string Url { get; }
+
+        /// <summary>
+        /// 超时时间
+        /// </summary>
+        TimeSpan Timeout { get; }
+
+        /// <summary>
+        /// 发起请求的 proxy
+        /// </summary>
         IExchangeProxy Proxy { get; }
 
-        object Response { get; }
+        /// <summary>
+        /// response 中的 json 字符串
+        /// </summary>
+        string ResponseJson { get; }
 
+        /// <summary>
+        /// 请求参数的 json 字符串
+        /// </summary>
+        string RequestJson { get; }
+
+        /// <summary>
+        /// 请求和回复模型中的 byte 数组
+        /// </summary>
         IEnumerable<IByteDescription> ByteDescriptions { get; }
     }
 }

@@ -20,6 +20,7 @@ namespace D.FreeExchange
 
         protected string _Address;
         protected Guid _uid;
+        protected bool _online;
 
         protected Dictionary<Guid, ExchangeMessageCache> _sendMsgCaches;
 
@@ -32,7 +33,7 @@ namespace D.FreeExchange
 
         public Guid Uid => _uid;
 
-        public bool Online => true;
+        public bool Online => _online;
 
         public string Address => _transporter?.Address;
         #endregion
@@ -43,6 +44,8 @@ namespace D.FreeExchange
         {
             _logger = logger;
 
+            _uid = Guid.NewGuid();
+            _online = false;
             _sendMsgCaches = new Dictionary<Guid, ExchangeMessageCache>();
         }
 
@@ -110,6 +113,64 @@ namespace D.FreeExchange
         }
         #endregion
 
+        #region proxy 四个事件
+        protected virtual void ProxyBackOnline()
+        {
+            _online = true;
+
+            try
+            {
+                BackOnline?.Invoke(this, new ExchangeProxyEventArgs { Timestamp = DateTimeOffset.Now });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"{this} 通知 BackOnline 事件发生异常：{ex}");
+            }
+        }
+
+        protected virtual void ProxyOffline()
+        {
+            _online = false;
+
+            try
+            {
+                Offline?.Invoke(this, new ExchangeProxyEventArgs { Timestamp = DateTimeOffset.Now });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"{this} 通知 Offline 事件发生异常：{ex}");
+            }
+        }
+
+        protected virtual void ProxyConnected()
+        {
+            _online = true;
+
+            try
+            {
+                Connected?.Invoke(this, new ExchangeProxyEventArgs { Timestamp = DateTimeOffset.Now });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"{this} 通知 Connected 事件发生异常：{ex}");
+            }
+        }
+
+        protected virtual void ProxyClosing()
+        {
+            _online = false;
+
+            try
+            {
+                Closing?.Invoke(this, new ExchangeProxyEventArgs { Timestamp = DateTimeOffset.Now });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"{this} 通知 Closing 事件发生异常：{ex}");
+            }
+        }
+        #endregion
+
         public virtual IResult Run()
         {
             _protocol.SetReceivedPayloadAction(this.ProtocolReceivePayload);
@@ -133,7 +194,29 @@ namespace D.FreeExchange
 
         private void ProtocolReceiveControl(int cmd, DateTimeOffset time)
         {
+            switch ((ExchangeProtocolCmd)cmd)
+            {
+                case ExchangeProtocolCmd.BackOnline:
+                    ProxyBackOnline();
+                    break;
 
+                case ExchangeProtocolCmd.Connected:
+                    ProxyConnected();
+                    break;
+
+                case ExchangeProtocolCmd.Disconnected:
+                    ProxyClosing();
+                    break;
+
+                case ExchangeProtocolCmd.Offline:
+                    ProxyOffline();
+                    break;
+
+                case ExchangeProtocolCmd.Heart:
+                default:
+                    _logger.LogError($"{this} 接收到了未处理的 ExchangeProtocolCmd = {(ExchangeProtocolCmd)cmd}");
+                    break;
+            }
         }
 
         private void SendBufferAction(byte[] buffer, int offest, int length)
