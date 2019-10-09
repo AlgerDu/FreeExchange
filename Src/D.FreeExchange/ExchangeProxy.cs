@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using D.Utils;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace D.FreeExchange
 {
@@ -25,6 +24,12 @@ namespace D.FreeExchange
         protected Dictionary<Guid, ExchangeMessageCache> _sendMsgCaches;
 
         #region ExchangeProxy 属性
+
+        public event ExchangeProxyBackOnlineEventHandler BackOnline;
+        public event ExchangeProxyOfflineEventHandler Offline;
+        public event ExchangeProxyConnectedEventHandler Connected;
+        public event ExchangeProxyClosingEventHandler Closing;
+
         public Guid Uid => _uid;
 
         public bool Online => true;

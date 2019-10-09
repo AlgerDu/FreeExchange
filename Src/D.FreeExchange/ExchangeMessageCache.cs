@@ -33,9 +33,9 @@ namespace D.FreeExchange
 
         public string Url { get; set; }
 
-        public string[] RequestJsonStrs { get; set; }
+        public object[] Request { get; set; }
 
-        public string ResponseJsonStr { get; set; }
+        public object Response { get; set; }
 
         public TimeSpan? Timeout { get; set; }
 
