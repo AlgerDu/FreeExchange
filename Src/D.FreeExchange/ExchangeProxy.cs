@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using D.Utils;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace D.FreeExchange
 {
@@ -18,7 +19,7 @@ namespace D.FreeExchange
         protected IActionExecutor _executor;
         protected ITransporter _transporter;
 
-        protected string _Address;
+        protected string _address;
         protected Guid _uid;
         protected bool _online;
 
@@ -53,6 +54,8 @@ namespace D.FreeExchange
 
         public virtual Task<IResult> Disconnect()
         {
+            ProxyClosing();
+
             _transporter.Close();
             return _protocol.Stop();
         }
@@ -250,7 +253,7 @@ namespace D.FreeExchange
 
         private void DealSendingMsg(ExchangeMessageForPayload msg)
         {
-            _logger.LogTrace($"{this} 接收到请求 {msg.Uid} {msg.Url}");
+            _logger.LogTrace($"{this} 接收到请求 {msg}");
 
             SendRecevieResponse(msg);
 
@@ -308,7 +311,7 @@ namespace D.FreeExchange
                 var cache = _sendMsgCaches[msg.Uid.Value];
 
                 cache.State = ExchangeMessageState.Complete;
-                cache.ResponseJsonStr = msg.ResponseJsonStr;
+                cache.Response = msg.Response;
 
                 cache.TCS.SetResult(Result.CreateSuccess());
             }
@@ -350,27 +353,13 @@ namespace D.FreeExchange
                 State = ExchangeMessageState.Create
             };
 
-            List<string> jsons = new List<string>(msg.Params.Length);
+            _executor.SerializeRequest(cache);
 
-            foreach (var p in msg.Params)
-            {
-                jsons.Add(JsonConvert.SerializeObject(p));
-            }
-
-            //TODO 解析参数中的字节部分
-
-            cache.RequestJsonStrs = jsons.ToArray();
-
-            _logger.LogTrace($"{this} 创建请求 {cache.Uid} {cache.Url}，参数个数 {cache.RequestJsonStrs.Length}");
+            _logger.LogTrace($"{this} 创建请求 {cache.Uid} {cache.Url}，参数个数 {msg.Params?.Length}");
 
             _sendMsgCaches.Add(cache.Uid.Value, cache);
 
             return cache;
-        }
-
-        private T AnalyeResponse<T>(ExchangeMessageCache cache)
-        {
-            return JsonConvert.DeserializeObject<T>(cache.ResponseJsonStr);
         }
 
         private Task<IResult> SendMsg(ExchangeMessageForPayload msg)
@@ -381,11 +370,10 @@ namespace D.FreeExchange
             };
 
             msg.ByteDescriptions = null;
-            var jsonStr = JsonConvert.SerializeObject(msg);
 
-            payload.Text = jsonStr;
+            payload.Text = JsonConvert.SerializeObject(msg);
 
-            _logger.LogTrace($"SendMsg {msg.Uid} {msg.State}");
+            _logger.LogTrace($"{this} send {msg}");
 
             return _protocol.PushPayload(payload);
         }
@@ -398,7 +386,7 @@ namespace D.FreeExchange
             {
                 Uid = cache.Uid,
                 Url = cache.Url,
-                RequestJsonStrs = cache.RequestJsonStrs,
+                Request = cache.Request,
                 ByteDescriptions = cache.ByteDescriptions,
                 State = cache.State,
                 Timeout = cache.Timeout
