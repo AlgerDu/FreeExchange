@@ -17,7 +17,7 @@ namespace D.FreeExchange
         /// <summary>
         /// 超时时间
         /// </summary>
-        TimeSpan Timeout { get; }
+        TimeSpan? Timeout { get; }
 
         /// <summary>
         /// 发起请求的 proxy
@@ -25,14 +25,14 @@ namespace D.FreeExchange
         IExchangeProxy Proxy { get; }
 
         /// <summary>
-        /// response 中的 json 字符串
-        /// </summary>
-        string ResponseJson { get; }
-
-        /// <summary>
         /// 请求参数的 json 字符串
         /// </summary>
-        string RequestJson { get; }
+        string Request { get; set; }
+
+        /// <summary>
+        /// response 中的 json 字符串
+        /// </summary>
+        string Response { get; set; }
 
         /// <summary>
         /// 请求和回复模型中的 byte 数组
